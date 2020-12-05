@@ -28,12 +28,27 @@ class Player(Creature):
     def __init__(self, file_path, pos=(0, 0)):
         super().__init__(file_path)
         self.x, self.y = pos
-        self.pos = pos
+
+    def get_pos(self):
+        return self.x, self.y
+
+    def set_pos(self, x, y):
+        self.x = x
+        self.y = y
 
 
 class Wall(Creature):
     def __init__(self, file_path):
         super().__init__(file_path)
+
+
+# errors
+class BorderError(Exception):
+    pass
+
+
+class WallStepError(Exception):
+    pass
 
 
 class StandartSprite(pygame.sprite.Sprite):
@@ -101,7 +116,7 @@ class Board:
             self.board[randint(0, self.height - 1)][randint(0, self.width - 1)].append(
                 Creature('pic2/cell1_tile_with_boom.jpg'))
             self.board[randint(0, self.height - 1)][randint(0, self.width - 1)].append(
-                Creature('pic2/cell1_with_box_tile.jpg'))
+                Wall('pic2/cell1_with_box_tile.jpg'))
 
     def start_game(self):
         self.player_obj = Player('pic2/pers2.png', pos=(2, 4))
@@ -113,6 +128,19 @@ class Board:
             if isinstance(obj, Creature):
                 self.player_obj.alive = False
                 self.game_run = False
+
+    def move_player(self, vector):
+        x_v, y_v = vector
+        x, y = self.player_obj.get_pos()
+        if not (0 <= x + x_v < self.width and 0 <= y + y_v < self.height):
+            raise BorderError
+        for cell_obj in self.board[y + y_v][x + x_v]:
+            if isinstance(cell_obj, Wall):
+                raise WallStepError
+        # if all is correct
+        self.player_obj.set_pos(x + x_v, y + y_v)
+
+
 
 
 def main():
@@ -137,26 +165,24 @@ def main():
                 continue
             if event.type == pygame.KEYDOWN:
                 if board.game_run:
-                    if event.key == pygame.K_UP:
-                        board.player_obj.y -= 1
-                        if board.player_obj.y < 0:
-                            board.player_obj.y = 0
-                        changed = True
-                    elif event.key == pygame.K_DOWN:
-                        board.player_obj.y += 1
-                        if board.player_obj.y > board.height - 1:
-                            board.player_obj.y = board.height - 1
-                        changed = True
-                    elif event.key == pygame.K_LEFT:
-                        board.player_obj.x -= 1
-                        if board.player_obj.x < 0:
-                            board.player_obj.x = 0
-                        changed = True
-                    elif event.key == pygame.K_RIGHT:
-                        board.player_obj.x += 1
-                        if board.player_obj.x > board.width - 1:
-                            board.player_obj.x = board.width - 1
-                        changed = True
+                    # move block
+                    try:
+                        if event.key == pygame.K_UP:
+                            board.move_player([0, -1])
+                            changed = True
+                        elif event.key == pygame.K_DOWN:
+                            board.move_player([0, 1])
+                            changed = True
+                        elif event.key == pygame.K_LEFT:
+                            board.move_player([-1, 0])
+                            changed = True
+                        elif event.key == pygame.K_RIGHT:
+                            board.move_player([1, 0])
+                            changed = True
+                    except BorderError:
+                        pass
+                    except WallStepError:
+                        pass
         if changed:
             board.render(screen)
             changed = False
