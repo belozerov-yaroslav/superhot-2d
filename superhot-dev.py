@@ -28,9 +28,10 @@ class Creature(CellObject):
 
 
 class Player(Creature):
-    def __init__(self, file_path, pos=(0, 0)):
+    def __init__(self, file_path, pos=(0, 0), angle=0):
         super().__init__(file_path)
         self.x, self.y = pos
+        self.angle = angle
 
     def get_pos(self):
         return self.x, self.y
@@ -55,7 +56,7 @@ class WallStepError(Exception):
 
 
 class StandartSprite(pygame.sprite.Sprite):
-    def __init__(self, file_path, pos):
+    def __init__(self, file_path, pos, angle):
         super().__init__()
         size = pygame.image.load(file_path).get_size()
         self.image = pygame.Surface(size)
@@ -63,6 +64,7 @@ class StandartSprite(pygame.sprite.Sprite):
         self.image.set_colorkey('white')
         pygame.draw.rect(self.image, 'black', [pos[0], pos[1], size[0], size[1]])
         self.image = pygame.image.load(file_path).convert_alpha()
+        self.image = pygame.transform.rotate(self.image, angle)
         self.rect = self.image.get_rect()
         self.rect.x = pos[0]
         self.rect.y = pos[1]
@@ -94,10 +96,10 @@ class Board:
                 for creature in self.board[i][j]:
                     self.sprites.add(StandartSprite(creature.file_path,
                                                     (j * self.cell_size + self.left_shift,
-                                                     i * self.cell_size + self.top_shift)))
+                                                     i * self.cell_size + self.top_shift), 0))
         self.sprites.add(StandartSprite(self.player_obj.file_path,
                                         (self.player_obj.x * self.cell_size + self.left_shift,
-                                         self.player_obj.y * self.cell_size + self.top_shift)))
+                                         self.player_obj.y * self.cell_size + self.top_shift), self.player_obj.angle))
         self.sprites.update()
         self.sprites.draw(screen)
 
@@ -144,13 +146,16 @@ class Board:
         self.player_obj.set_pos(x + x_v, y + y_v)
 
 
+
+
 def main():
     pygame.init()
     n = 15
-    size = 40 + n * config.cell_size, 40 + n * config.cell_size
+    cs = 48
+    size = 40 + n * cs, 40 + n * cs
     screen = pygame.display.set_mode(size)
     pygame.display.set_caption('Superhot 2d')
-    board = Board(n, n, cell_size=config.cell_size, left_shift=20, top_shift=20)
+    board = Board(n, n, cell_size=cs, left_shift=20, top_shift=20)
     board.start_game()
     board.generate_field()
     fps = 30  # количество кадров в секунду
@@ -170,15 +175,19 @@ def main():
                         if event.key == config.move_up:
                             board.move_player([0, -1])
                             changed = True
+                            board.player_obj.angle = 0
                         elif event.key == config.move_down:
                             board.move_player([0, 1])
                             changed = True
+                            board.player_obj.angle = 180
                         elif event.key == config.move_left:
                             board.move_player([-1, 0])
                             changed = True
+                            board.player_obj.angle = 90
                         elif event.key == config.move_right:
                             board.move_player([1, 0])
                             changed = True
+                            board.player_obj.angle = 270
                     except BorderError:
                         pass
                     except WallStepError:
