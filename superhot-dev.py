@@ -172,7 +172,9 @@ def main():
     fps = 30  # количество кадров в секунду
     clock = pygame.time.Clock()
     running = True
+    step = False
     board.render(screen)
+    player_vector = [0, -1]
     changed = False
     while running:
         for event in pygame.event.get():
@@ -184,31 +186,38 @@ def main():
                     # блок перемещения игрока
                     try:
                         if event.key == config.move_up:
-                            board.move_player([0, -1])
-                            changed = True
+                            player_vector = [0, -1]
                             board.player_obj.angle = 0
+                            changed = True
                         elif event.key == config.move_down:
-                            board.move_player([0, 1])
-                            changed = True
+                            player_vector = [0, 1]
                             board.player_obj.angle = 180
+                            changed = True
                         elif event.key == config.move_left:
-                            board.move_player([-1, 0])
-                            changed = True
+                            player_vector = [-1, 0]
                             board.player_obj.angle = 90
-                        elif event.key == config.move_right:
-                            board.move_player([1, 0])
                             changed = True
+                        elif event.key == config.move_right:
+                            player_vector = [1, 0]
                             board.player_obj.angle = 270
+                            changed = True
+                        elif event.key == config.move_button:
+                            board.move_player(player_vector)
+                            changed = True
+                            step = True
                     except BorderError:
                         pass
                     except WallStepError:
                         pass
+        if step:
+            pass
         if changed:
             board.render(screen)
             changed = False
             board.check_actions()
         pygame.display.flip()
         clock.tick(fps)
+
     pygame.quit()
 
 
