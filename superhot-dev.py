@@ -8,24 +8,32 @@ all_sprites = pygame.sprite.Group()
 
 # стабильные объекты
 class CellObject:
-    def __init__(self, file_path):
+    def __init__(self, file_path, angle=0):
         self.file_path = file_path
+        self.angle = angle
 
     def __str__(self):
         return self.__class__.__name__
 
 
 class SimpleField(CellObject):
-    def __init__(self, file_path):
-        super().__init__(file_path)
+    def __init__(self, file_path, angle=0):
+        super().__init__(file_path, angle)
 
 
 # объекты, которые могут быть живы или мертвы
 class Creature(CellObject):
-    def __init__(self, file_path):
-        super().__init__(file_path)
+    def __init__(self, file_path, angle=0):
+        super().__init__(file_path, angle)
         self.alive = True
 
+
+class Enemy(Creature):
+    def __init__(self, file_path, angle=0, alive=True):
+        super().__init__(file_path)
+        self.triggered = False
+        self.angle = angle
+        self.alive = alive
 
 class Player(Creature):
     def __init__(self, file_path, pos=(0, 0), angle=0):
@@ -96,7 +104,7 @@ class Board:
                 for creature in self.board[i][j]:
                     self.sprites.add(StandartSprite(creature.file_path,
                                                     (j * self.cell_size + self.left_shift,
-                                                     i * self.cell_size + self.top_shift), 0))
+                                                     i * self.cell_size + self.top_shift), creature.angle))
         self.sprites.add(StandartSprite(self.player_obj.file_path,
                                         (self.player_obj.x * self.cell_size + self.left_shift,
                                          self.player_obj.y * self.cell_size + self.top_shift), self.player_obj.angle))
@@ -122,6 +130,9 @@ class Board:
                 Creature('pic2/cell1_tile_with_boom.jpg'))
             self.board[randint(0, self.height - 1)][randint(0, self.width - 1)].append(
                 Wall('pic2/cell1_with_box_tile.jpg'))
+        for i in range(10):
+            self.board[randint(0, self.height - 1)][randint(0, self.width - 1)].append(
+                Enemy('pic2/enemy.png', choice([0, 90, 180, 270])))
 
     def start_game(self):
         self.player_obj = Player('pic2/pers2.png', pos=(2, 4))
