@@ -5,6 +5,8 @@ import config
 
 all_sprites = pygame.sprite.Group()
 
+SHOOT_LENGHT = 10
+
 
 # стабильные объекты
 class CellObject:
@@ -79,6 +81,13 @@ class StandartSprite(pygame.sprite.Sprite):
         self.rect.y = pos[1]
 
 
+class ShootSprite(CellObject):
+    def __init__(self, file_path, pos, angle=0, timer=0):
+        super().__init__(file_path, pos)
+        self.timer = timer
+        self.angle = angle
+
+
 class Board:
     def __init__(self, width, height, cell_size=30,
                  left_shift=10, top_shift=10):
@@ -91,6 +100,19 @@ class Board:
         self.game_run = False
 
         self.board = [[[] for _ in range(self.width)] for _ in range(self.height)]
+
+    def player_shoot(self, vector):
+        x_v, y_v = vector
+        x, y = self.player_obj.get_pos()
+        while True:
+            if not (0 <= x + x_v < self.width and 0 <= y + y_v < self.height):
+                break
+            if len(self.board[y + y_v][x + x_v]) != 1:  # в боарде хранятся списки обектов, и если ничего нет, то там
+                break  # только объект класса SimpleField
+            x += x_v
+            y += y_v
+            self.board[y][x].append(ShootSprite('pic2/cell1_tile_with_lazer.jpg',
+                                                (y, x), self.player_obj.angle, SHOOT_LENGHT))
 
     def set_view(self, cell_size, left_shift, top_shift):
         self.cell_size = cell_size
@@ -106,6 +128,10 @@ class Board:
                     self.sprites.add(StandartSprite(creature.file_path,
                                                     (j * self.cell_size + self.left_shift,
                                                      i * self.cell_size + self.top_shift), creature.angle))
+                    if isinstance(creature, ShootSprite):
+                        creature.timer -= 1
+                        if creature.timer <= 0:
+                            self.board[i][j].remove(creature)
         self.sprites.add(StandartSprite(self.player_obj.file_path,
                                         (self.player_obj.x * self.cell_size + self.left_shift,
                                          self.player_obj.y * self.cell_size + self.top_shift), self.player_obj.angle))
@@ -202,6 +228,10 @@ def main():
                             changed = True
                         elif event.key == config.move_button:
                             board.move_player(player_vector)
+                            changed = True
+                            step = True
+                        elif event.key == config.shot_button:
+                            board.player_shoot(player_vector)
                             changed = True
                             step = True
                     except BorderError:
