@@ -119,6 +119,20 @@ class Board:
         self.left_shift = left_shift
         self.top_shift = top_shift
 
+    def shoot_render(self, screen):
+        changed = False
+        for i in range(self.height):
+            for j in range(self.width):
+                for creature in self.board[i][j]:
+                    if isinstance(creature, ShootSprite):
+                        if creature.timer > 0:
+                            creature.timer -= 1
+                        else:
+                            changed = True
+                            self.board[i][j].remove(creature)
+        if changed:
+            self.render(screen)
+
     def render(self, screen):
         screen.fill('black')
         self.sprites.empty()
@@ -128,10 +142,6 @@ class Board:
                     self.sprites.add(StandartSprite(creature.file_path,
                                                     (j * self.cell_size + self.left_shift,
                                                      i * self.cell_size + self.top_shift), creature.angle))
-                    if isinstance(creature, ShootSprite):
-                        creature.timer -= 1
-                        if creature.timer <= 0:
-                            self.board[i][j].remove(creature)
         self.sprites.add(StandartSprite(self.player_obj.file_path,
                                         (self.player_obj.x * self.cell_size + self.left_shift,
                                          self.player_obj.y * self.cell_size + self.top_shift), self.player_obj.angle))
@@ -244,6 +254,7 @@ def main():
             board.render(screen)
             changed = False
             board.check_actions()
+        board.shoot_render(screen)
         pygame.display.flip()
         clock.tick(fps)
 
