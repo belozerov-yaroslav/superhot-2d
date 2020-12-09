@@ -108,6 +108,9 @@ class Board:
             if not (0 <= x + x_v < self.width and 0 <= y + y_v < self.height):
                 break
             if len(self.board[y + y_v][x + x_v]) != 1:  # в боарде хранятся списки обектов, и если ничего нет, то там
+                for i in self.board[y + y_v][x + x_v]:
+                    if isinstance(i, Wall) or isinstance(i, Enemy):
+                        self.board[y + y_v][x + x_v].remove(i)
                 break  # только объект класса SimpleField
             x += x_v
             y += y_v
