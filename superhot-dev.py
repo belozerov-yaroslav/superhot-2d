@@ -5,7 +5,7 @@ import config
 
 all_sprites = pygame.sprite.Group()
 
-SHOOT_LENGHT = 10
+SHOOT_LENGTH = 10
 
 
 # стабильные объекты
@@ -101,6 +101,7 @@ class Board:
 
         self.board = [[[] for _ in range(self.width)] for _ in range(self.height)]
 
+    # Функция, отслеживающая время отрисовки лазеров
     def player_shoot(self, vector):
         x_v, y_v = vector
         x, y = self.player_obj.get_pos()
@@ -111,16 +112,13 @@ class Board:
                 for i in self.board[y + y_v][x + x_v]:
                     if isinstance(i, Wall) or isinstance(i, Enemy):
                         self.board[y + y_v][x + x_v].remove(i)
+                        self.board[y + y_v][x + x_v].append(
+                            ShootSprite('pic2/pepl.jpg', (x + x_v, y + y_v), self.player_obj.angle, 10))
                 break  # только объект класса SimpleField
             x += x_v
             y += y_v
             self.board[y][x].append(ShootSprite('pic2/cell1_tile_with_lazer.jpg',
-                                                (y, x), self.player_obj.angle, SHOOT_LENGHT))
-
-    def set_view(self, cell_size, left_shift, top_shift):
-        self.cell_size = cell_size
-        self.left_shift = left_shift
-        self.top_shift = top_shift
+                                                (y, x), self.player_obj.angle, SHOOT_LENGTH))
 
     def shoot_render(self, screen):
         changed = False
@@ -251,12 +249,15 @@ def main():
                         pass
                     except WallStepError:
                         pass
+        # если сделали ход то идут враги
         if step:
             pass
+        # если изменилась картинка то рендерим
         if changed:
             board.render(screen)
             changed = False
             board.check_actions()
+        # уменьшее таймера
         board.shoot_render(screen)
         pygame.display.flip()
         clock.tick(fps)
