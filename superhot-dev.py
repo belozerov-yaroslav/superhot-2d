@@ -35,6 +35,7 @@ class Enemy(Creature):
         self.angle = angle
         self.alive = alive
 
+
 class Player(Creature):
     def __init__(self, file_path, pos=(0, 0), angle=0):
         super().__init__(file_path)
@@ -155,8 +156,6 @@ class Board:
                 raise WallStepError
         # если все нормально
         self.player_obj.set_pos(x + x_v, y + y_v)
-
-
 
 
 def main():
