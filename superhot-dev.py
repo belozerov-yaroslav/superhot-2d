@@ -101,6 +101,9 @@ class Board:
 
         self.board = [[[] for _ in range(self.width)] for _ in range(self.height)]
 
+    def enemy_step(self):
+        pass
+
     # Функция, отслеживающая время отрисовки лазеров
     def player_shoot(self, vector):
         x_v, y_v = vector
@@ -251,7 +254,7 @@ def main():
                         pass
         # если сделали ход то идут враги
         if step:
-            pass
+            board.enemy_step()
         # если изменилась картинка то рендерим
         if changed:
             board.render(screen)
