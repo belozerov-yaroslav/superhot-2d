@@ -119,22 +119,26 @@ class Board:
                         if abs(x_difference) < abs(y_difference):
                             if y_difference < 0:
                                 self.board[enemy[0]][enemy[1]].remove(i)
+                                i.angle = 90
                                 self.board[enemy[0]][enemy[1] - 1].append(i)
                                 self.enemis.remove(enemy)
                                 self.enemis.append([enemy[0], enemy[1] - 1])
                             else:
                                 self.board[enemy[0]][enemy[1]].remove(i)
+                                i.angle = 270
                                 self.board[enemy[0]][enemy[1] + 1].append(i)
                                 self.enemis.remove(enemy)
                                 self.enemis.append([enemy[0], enemy[1] + 1])
                         else:
                             if x_difference < 0:
                                 self.board[enemy[0]][enemy[1]].remove(i)
+                                i.angle = 0
                                 self.board[enemy[0] - 1][enemy[1]].append(i)
                                 self.enemis.remove(enemy)
                                 self.enemis.append([enemy[0] - 1, enemy[1]])
                             else:
                                 self.board[enemy[0]][enemy[1]].remove(i)
+                                i.angle = 180
                                 self.board[enemy[0] + 1][enemy[1]].append(i)
                                 self.enemis.remove(enemy)
                                 self.enemis.append([enemy[0] + 1, enemy[1]])
