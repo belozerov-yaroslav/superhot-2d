@@ -7,4 +7,13 @@ move_right = pygame.K_RIGHT
 move_button = pygame.K_SPACE
 shot_button = pygame.K_e
 
+sprite_folder_name = 'pic2'
+player_sprite = 'pers2.png'
+wall_sprite = 'cell1_with_box_tile.jpg'
+enemy_sprite = 'enemy.png'
+field_sprite = 'cell1_tile.jpg'
+lazer_sprite = 'cell1_tile_with_lazer.jpg'
+pepl_sprite = 'pepl.jpg'
+boom_sprite = 'cell1_tile_with_boom.jpg'
+
 cell_size = 48  # в пикселях
