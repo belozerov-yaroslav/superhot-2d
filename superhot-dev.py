@@ -31,10 +31,12 @@ class Creature(CellObject):
 
 
 class Enemy(Creature):
-    def __init__(self, file_path, angle=0, alive=True):
+    def __init__(self, file_path, pos=(0, 0), angle=0, alive=True):
         super().__init__(file_path)
         self.triggered = False
         self.angle = angle
+        self.x, self.y = pos
+        self.Lose = False
         self.alive = alive
 
 
@@ -103,7 +105,40 @@ class Board:
         self.board = [[[] for _ in range(self.width)] for _ in range(self.height)]
 
     def enemy_step(self):  # ходят враги
-        pass
+        for enemy in self.enemis:
+            for i in self.board[enemy[0]][enemy[1]]:
+                if isinstance(i, Enemy):
+                    x_difference = self.player_obj.y - enemy[0]
+                    y_difference = self.player_obj.x - enemy[1]
+                    if abs(x_difference) <= 1 or  abs(y_difference) <= 1:
+                        i.triggered = True
+                    if not i.Lose and i.triggered: # если он видит игрока и прошлый раз он не промазал
+                        pass # то стреляет
+                        i.triggered = False
+                    else:
+                        if abs(x_difference) < abs(y_difference):
+                            if y_difference < 0:
+                                self.board[enemy[0]][enemy[1]].remove(i)
+                                self.board[enemy[0]][enemy[1] - 1].append(i)
+                                self.enemis.remove(enemy)
+                                self.enemis.append([enemy[0], enemy[1] - 1])
+                            else:
+                                self.board[enemy[0]][enemy[1]].remove(i)
+                                self.board[enemy[0]][enemy[1] + 1].append(i)
+                                self.enemis.remove(enemy)
+                                self.enemis.append([enemy[0], enemy[1] + 1])
+                        else:
+                            if x_difference < 0:
+                                self.board[enemy[0]][enemy[1]].remove(i)
+                                self.board[enemy[0] - 1][enemy[1]].append(i)
+                                self.enemis.remove(enemy)
+                                self.enemis.append([enemy[0] - 1, enemy[1]])
+                            else:
+                                self.board[enemy[0]][enemy[1]].remove(i)
+                                self.board[enemy[0] + 1][enemy[1]].append(i)
+                                self.enemis.remove(enemy)
+                                self.enemis.append([enemy[0] + 1, enemy[1]])
+
 
     # Функция, отслеживающая время отрисовки лазеров
     def player_shoot(self, vector):
@@ -177,7 +212,7 @@ class Board:
             if len(self.board[x][y]) != 1:
                 del self.board[x][y][1:]
             self.board[x][y].append(
-                Enemy('pic2/enemy.png', choice([0, 90, 180, 270])))
+                Enemy('pic2/enemy.png', (x, y), choice([0, 90, 180, 270])))
             self.enemis.append([x, y])
 
     def start_game(self):
@@ -260,6 +295,7 @@ def main():
         # если сделали ход то идут враги
         if step:
             board.enemy_step()
+            step = False
         # если изменилась картинка то рендерим
         if changed:
             board.render(screen)
