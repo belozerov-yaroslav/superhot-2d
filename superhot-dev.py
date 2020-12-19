@@ -2,16 +2,42 @@ import pygame
 from random import choice, randint
 import time
 import config
+import os
 
 all_sprites = pygame.sprite.Group()
 
 SHOOT_LENGTH = 10
 
+pygame.init()
+n = 15
+cs = 48
+size = 40 + n * cs, 40 + n * cs
+screen = pygame.display.set_mode(size)
+pygame.display.set_caption('Superhot 2d')
+
+
+def load_image(name, color_key=None):
+    fullname = os.path.join(config.sprite_folder_name, name)
+    try:
+        image = pygame.image.load(fullname).convert()
+    except pygame.error as message:
+        print('Cannot load image:', name)
+        raise SystemExit(message)
+
+    if color_key is not None:
+        if color_key == -1:
+            color_key = image.get_at((0, 0))
+        image.set_colorkey(color_key)
+    else:
+        image = image.convert_alpha()
+    return image
+
 
 # стабильные объекты
 class CellObject:
-    def __init__(self, file_path, angle=0):
-        self.file_path = file_path
+    image = load_image(config.field_sprite)
+
+    def __init__(self, angle=0):
         self.angle = angle
 
     def __str__(self):
@@ -19,30 +45,36 @@ class CellObject:
 
 
 class SimpleField(CellObject):
-    def __init__(self, file_path, angle=0):
-        super().__init__(file_path, angle)
+    image = load_image(config.field_sprite)
+
+    def __init__(self, angle=0):
+        super().__init__(angle)
 
 
 # объекты, которые могут быть живы или мертвы
 class Creature(CellObject):
-    def __init__(self, file_path, angle=0):
-        super().__init__(file_path, angle)
+    image = load_image(config.field_sprite)
+
+    def __init__(self, angle=0):
+        super().__init__(angle)
         self.alive = True
 
 
 class Enemy(Creature):
-    def __init__(self, file_path, angle=0, alive=True):
-        super().__init__(file_path)
+    image = load_image(config.enemy_sprite, -1)
+
+    def __init__(self, angle=0, alive=True):
+        super().__init__(angle)
         self.triggered = False
-        self.angle = angle
         self.alive = alive
 
 
 class Player(Creature):
-    def __init__(self, file_path, pos=(0, 0), angle=0):
-        super().__init__(file_path)
+    image = load_image(config.player_sprite, -1)
+
+    def __init__(self, pos=(0, 0), angle=0):
+        super().__init__(angle)
         self.x, self.y = pos
-        self.angle = angle
 
     def get_pos(self):
         return self.x, self.y
@@ -53,8 +85,17 @@ class Player(Creature):
 
 
 class Wall(Creature):
-    def __init__(self, file_path):
-        super().__init__(file_path)
+    image = load_image(config.wall_sprite)
+
+    def __init__(self):
+        super().__init__()
+
+
+class Boom(Creature):
+    image = load_image(config.boom_sprite)
+
+    def __init__(self):
+        super().__init__()
 
 
 # ошибки
@@ -67,23 +108,31 @@ class WallStepError(Exception):
 
 
 class StandartSprite(pygame.sprite.Sprite):
-    def __init__(self, file_path, pos, angle):
+    def __init__(self, image, pos, angle):
         super().__init__()
-        size = pygame.image.load(file_path).get_size()
-        self.image = pygame.Surface(size)
-        self.image.fill('white')
-        self.image.set_colorkey('white')
-        pygame.draw.rect(self.image, 'black', [pos[0], pos[1], size[0], size[1]])
-        self.image = pygame.image.load(file_path).convert_alpha()
-        self.image = pygame.transform.rotate(self.image, angle)
+        size = image.get_size()
+        self.image = image
+        if angle != 0:
+            self.image = pygame.transform.rotate(self.image, angle)
         self.rect = self.image.get_rect()
         self.rect.x = pos[0]
         self.rect.y = pos[1]
 
 
 class ShootSprite(CellObject):
-    def __init__(self, file_path, pos, angle=0, timer=0):
-        super().__init__(file_path, pos)
+    image = load_image(config.lazer_sprite)
+
+    def __init__(self, pos, angle=0, timer=0):
+        super().__init__(pos)
+        self.timer = timer
+        self.angle = angle
+
+
+class Pepl(CellObject):
+    image = load_image(config.pepl_sprite)
+
+    def __init__(self, pos, angle=0, timer=0):
+        super().__init__(pos)
         self.timer = timer
         self.angle = angle
 
@@ -110,22 +159,21 @@ class Board:
                 break
             if len(self.board[y + y_v][x + x_v]) != 1:  # в боарде хранятся списки обектов, и если ничего нет, то там
                 for i in self.board[y + y_v][x + x_v]:
-                    if isinstance(i, Wall) or isinstance(i, Enemy):
+                    if isinstance(i, Wall) or isinstance(i, Enemy) or isinstance(i, Boom):
                         self.board[y + y_v][x + x_v].remove(i)
                         self.board[y + y_v][x + x_v].append(
-                            ShootSprite('pic2/pepl.jpg', (x + x_v, y + y_v), self.player_obj.angle, 10))
+                            Pepl((x + x_v, y + y_v), self.player_obj.angle, 10))
                 break  # только объект класса SimpleField
             x += x_v
             y += y_v
-            self.board[y][x].append(ShootSprite('pic2/cell1_tile_with_lazer.jpg',
-                                                (y, x), self.player_obj.angle, SHOOT_LENGTH))
+            self.board[y][x].append(ShootSprite((y, x), self.player_obj.angle, SHOOT_LENGTH))
 
     def shoot_render(self, screen):
         changed = False
         for i in range(self.height):
             for j in range(self.width):
                 for creature in self.board[i][j]:
-                    if isinstance(creature, ShootSprite):
+                    if isinstance(creature, ShootSprite) or isinstance(creature, Pepl):
                         if creature.timer > 0:
                             creature.timer -= 1
                         else:
@@ -140,10 +188,10 @@ class Board:
         for i in range(self.height):
             for j in range(self.width):
                 for creature in self.board[i][j]:
-                    self.sprites.add(StandartSprite(creature.file_path,
+                    self.sprites.add(StandartSprite(creature.image,
                                                     (j * self.cell_size + self.left_shift,
                                                      i * self.cell_size + self.top_shift), creature.angle))
-        self.sprites.add(StandartSprite(self.player_obj.file_path,
+        self.sprites.add(StandartSprite(self.player_obj.image,
                                         (self.player_obj.x * self.cell_size + self.left_shift,
                                          self.player_obj.y * self.cell_size + self.top_shift), self.player_obj.angle))
         self.sprites.update()
@@ -162,18 +210,18 @@ class Board:
         t1 = time.time()
         for i in range(self.height):
             for j in range(self.width):
-                self.board[i][j].append(SimpleField('pic2/cell1_tile.jpg'))
+                self.board[i][j].append(SimpleField())
         for i in range(10):
             self.board[randint(0, self.height - 1)][randint(0, self.width - 1)].append(
-                Creature('pic2/cell1_tile_with_boom.jpg'))
+                Boom())
             self.board[randint(0, self.height - 1)][randint(0, self.width - 1)].append(
-                Wall('pic2/cell1_with_box_tile.jpg'))
+                Wall())
         for i in range(10):
             self.board[randint(0, self.height - 1)][randint(0, self.width - 1)].append(
-                Enemy('pic2/enemy.png', choice([0, 90, 180, 270])))
+                Enemy(choice([0, 90, 180, 270])))
 
     def start_game(self):
-        self.player_obj = Player('pic2/pers2.png', pos=(2, 4))
+        self.player_obj = Player(pos=(2, 4))
         self.game_run = True
 
     def check_actions(self):
@@ -196,12 +244,6 @@ class Board:
 
 
 def main():
-    pygame.init()
-    n = 15
-    cs = 48
-    size = 40 + n * cs, 40 + n * cs
-    screen = pygame.display.set_mode(size)
-    pygame.display.set_caption('Superhot 2d')
     board = Board(n, n, cell_size=cs, left_shift=20, top_shift=20)
     board.start_game()
     board.generate_field()
