@@ -93,6 +93,7 @@ class Board:
                  left_shift=10, top_shift=10):
         self.width = width
         self.height = height
+        self.enemis = []
         self.cell_size = cell_size
         self.left_shift = left_shift
         self.top_shift = top_shift
@@ -101,7 +102,7 @@ class Board:
 
         self.board = [[[] for _ in range(self.width)] for _ in range(self.height)]
 
-    def enemy_step(self):
+    def enemy_step(self):  # ходят враги
         pass
 
     # Функция, отслеживающая время отрисовки лазеров
@@ -172,8 +173,12 @@ class Board:
             self.board[randint(0, self.height - 1)][randint(0, self.width - 1)].append(
                 Wall('pic2/cell1_with_box_tile.jpg'))
         for i in range(10):
-            self.board[randint(0, self.height - 1)][randint(0, self.width - 1)].append(
+            x, y = randint(0, self.height - 1), randint(0, self.width - 1)
+            if len(self.board[x][y]) != 1:
+                del self.board[x][y][1:]
+            self.board[x][y].append(
                 Enemy('pic2/enemy.png', choice([0, 90, 180, 270])))
+            self.enemis.append([x, y])
 
     def start_game(self):
         self.player_obj = Player('pic2/pers2.png', pos=(2, 4))
