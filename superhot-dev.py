@@ -135,7 +135,16 @@ class ShootSprite(CellObject):
 class Pepl(CellObject):
     image = load_image(config.pepl_sprite)
 
-    def __init__(self, pos, angle=0, timer=0):
+    def __init__(self, pos, angle=0, timer=10):
+        super().__init__(pos)
+        self.timer = timer
+        self.angle = angle
+
+
+class Pepl_Boom(Pepl):
+    image = load_image(config.pepl_boom_sprite)
+
+    def __init__(self, pos, angle=0, timer=10):
         super().__init__(pos)
         self.timer = timer
         self.angle = angle
@@ -204,10 +213,12 @@ class Board:
                 break
             if len(self.board[y + y_v][x + x_v]) != 1:  # в боарде хранятся списки обектов, и если ничего нет, то там
                 for i in self.board[y + y_v][x + x_v]:
-                    if isinstance(i, Wall) or isinstance(i, Enemy) or isinstance(i, Boom):
+                    if isinstance(i, Wall) or isinstance(i, Enemy):
                         self.board[y + y_v][x + x_v].remove(i)
                         self.board[y + y_v][x + x_v].append(
                             Pepl((x + x_v, y + y_v), self.player_obj.angle, 10))
+                    elif isinstance(i, Boom):
+                        self.explosion(x + x_v, y + y_v)
                 break  # только объект класса SimpleField
             x += x_v
             y += y_v
@@ -226,6 +237,22 @@ class Board:
                             self.board[i][j].remove(creature)
         if changed:
             self.render(screen)
+
+    def explosion(self, x, y):
+        for i in range(-1, 2):
+            for j in range(-1, 2):
+                if x + i < 0 or x + i >= len(self.board):
+                    continue
+                if y + j < 0 or y + j >= len(self.board):
+                    continue
+                for z in self.board[y + j][x + i]:
+                    if isinstance(z, SimpleField):
+                        continue
+                    self.board[y + j][x + i].remove(z)
+                self.board[y + j][x + i].append(Pepl_Boom((x + i, y + j)))
+                if self.player_obj.get_pos() == (x + i, y + j):
+                    self.player_obj.alive = False
+                    self.game_run = False
 
     def render(self, screen):
         screen.fill('black')
