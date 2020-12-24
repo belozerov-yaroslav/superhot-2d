@@ -15,5 +15,6 @@ field_sprite = 'cell1_tile.jpg'
 lazer_sprite = 'cell1_tile_with_lazer.jpg'
 pepl_sprite = 'pepl.jpg'
 boom_sprite = 'cell1_tile_with_boom.jpg'
+game_over_sprite = 'game_over.png'
 
 cell_size = 48  # в пикселях
