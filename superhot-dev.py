@@ -9,9 +9,10 @@ all_sprites = pygame.sprite.Group()
 SHOOT_LENGTH = 10
 
 pygame.init()
-n = 15
+n1 = 15
+n2 = 15
 cs = 48
-size = 40 + n * cs, 40 + n * cs
+size = 40 + n1 * cs, 40 + n2 * cs
 screen = pygame.display.set_mode(size)
 pygame.display.set_caption('Superhot 2d')
 
@@ -170,10 +171,10 @@ class Board:
                 if isinstance(i, Enemy):
                     x_difference = self.player_obj.y - enemy[0]
                     y_difference = self.player_obj.x - enemy[1]
-                    if abs(x_difference) <= 1 or  abs(y_difference) <= 1:
+                    if abs(x_difference) <= 1 or abs(y_difference) <= 1:
                         i.triggered = True
-                    if not i.Lose and i.triggered: # если он видит игрока и прошлый раз он не промазал
-                        pass # то стреляет
+                    if not i.Lose and i.triggered:  # если он видит игрока и прошлый раз он не промазал
+                        pass  # то стреляет
                         i.triggered = False
                     else:
                         if abs(x_difference) < abs(y_difference):
@@ -202,7 +203,6 @@ class Board:
                                 self.board[enemy[0] + 1][enemy[1]].append(i)
                                 self.enemis.remove(enemy)
                                 self.enemis.append([enemy[0] + 1, enemy[1]])
-
 
     # Функция, отслеживающая время отрисовки лазеров
     def player_shoot(self, vector):
@@ -273,6 +273,13 @@ class Board:
         self.sprites.update()
         self.sprites.draw(screen)
 
+    def render_game_over_screen(self, screen):
+        screen.fill('black')
+        self.sprites.empty()
+        self.sprites.add(StandartSprite(pygame.transform.scale(load_image(config.game_over_sprite),
+                                                               (screen.get_width(), screen.get_height())), (0, 0), 0))
+        self.sprites.draw(screen)
+
     def get_cell(self, pos):
         x_index = (pos[0] - self.left_shift) // self.cell_size
         y_index = (pos[1] - self.top_shift) // self.cell_size
@@ -301,7 +308,7 @@ class Board:
             self.enemis.append([x, y])
 
     def start_game(self):
-        self.player_obj = Player(pos=(2, 4))
+        self.player_obj = Player(pos=(randint(0, len(self.board[0]) - 1), randint(0, len(self.board) - 1)))
         self.game_run = True
 
     def check_actions(self):
@@ -322,15 +329,22 @@ class Board:
         # если все нормально
         self.player_obj.set_pos(x + x_v, y + y_v)
 
+    def new_game(self, screen):
+        self.generate_field()
+        self.start_game()
+        self.render(screen)
+        self.game_run = True
+
 
 def main():
-    board = Board(n, n, cell_size=cs, left_shift=20, top_shift=20)
+    board = Board(n1, n2, cell_size=cs, left_shift=20, top_shift=20)
     board.start_game()
     board.generate_field()
     fps = 30  # количество кадров в секунду
     clock = pygame.time.Clock()
     running = True
     step = False
+    game_over = False
     board.render(screen)
     player_vector = [0, -1]
     changed = False
@@ -346,42 +360,47 @@ def main():
                         if event.key == config.move_up:
                             player_vector = [0, -1]
                             board.player_obj.angle = 0
-                            changed = True
                         elif event.key == config.move_down:
                             player_vector = [0, 1]
                             board.player_obj.angle = 180
-                            changed = True
                         elif event.key == config.move_left:
                             player_vector = [-1, 0]
                             board.player_obj.angle = 90
-                            changed = True
                         elif event.key == config.move_right:
                             player_vector = [1, 0]
                             board.player_obj.angle = 270
-                            changed = True
                         elif event.key == config.move_button:
                             board.move_player(player_vector)
-                            changed = True
                             step = True
                         elif event.key == config.shot_button:
                             board.player_shoot(player_vector)
-                            changed = True
                             step = True
                     except BorderError:
                         pass
                     except WallStepError:
                         pass
+                changed = True
+
         # если сделали ход то идут враги
         if step:
             board.enemy_step()
             step = False
         # если изменилась картинка то рендерим
         if changed:
-            board.render(screen)
+            if board.game_run:
+                board.render(screen)
+                board.shoot_render(screen)
+                board.check_actions()
+            else:
+                if not game_over:
+                    board.render_game_over_screen(screen)
+                    game_over = True
+                else:
+                    player_vector = [0, -1]
+                    board.new_game(screen)
+                    game_over = False
             changed = False
-            board.check_actions()
-        # уменьшее таймера
-        board.shoot_render(screen)
+        # уменьшение таймера
         pygame.display.flip()
         clock.tick(fps)
 
