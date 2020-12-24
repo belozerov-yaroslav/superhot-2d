@@ -386,10 +386,11 @@ def main():
             board.enemy_step()
             step = False
         # если изменилась картинка то рендерим
+        if board.game_run:
+            board.shoot_render(screen)
         if changed:
             if board.game_run:
                 board.render(screen)
-                board.shoot_render(screen)
                 board.check_actions()
             else:
                 if not game_over:
