@@ -248,6 +248,10 @@ class Board:
                 for z in self.board[y + j][x + i]:
                     if isinstance(z, SimpleField):
                         continue
+                    elif isinstance(z, Boom):
+                        self.board[y + j][x + i].remove(z)
+                        self.explosion(x + i, y + j)
+                        return
                     self.board[y + j][x + i].remove(z)
                 self.board[y + j][x + i].append(Pepl_Boom((x + i, y + j)))
                 if self.player_obj.get_pos() == (x + i, y + j):
