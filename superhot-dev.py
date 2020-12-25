@@ -136,7 +136,16 @@ class ShootSprite(CellObject):
 class Pepl(CellObject):
     image = load_image(config.pepl_sprite)
 
-    def __init__(self, pos, angle=0, timer=0):
+    def __init__(self, pos, angle=0, timer=10):
+        super().__init__(pos)
+        self.timer = timer
+        self.angle = angle
+
+
+class Pepl_Boom(Pepl):
+    image = load_image(config.pepl_boom_sprite)
+
+    def __init__(self, pos, angle=0, timer=10):
         super().__init__(pos)
         self.timer = timer
         self.angle = angle
@@ -204,10 +213,12 @@ class Board:
                 break
             if len(self.board[y + y_v][x + x_v]) != 1:  # в боарде хранятся списки обектов, и если ничего нет, то там
                 for i in self.board[y + y_v][x + x_v]:
-                    if isinstance(i, Wall) or isinstance(i, Enemy) or isinstance(i, Boom):
+                    if isinstance(i, Wall) or isinstance(i, Enemy):
                         self.board[y + y_v][x + x_v].remove(i)
                         self.board[y + y_v][x + x_v].append(
                             Pepl((x + x_v, y + y_v), self.player_obj.angle, 10))
+                    elif isinstance(i, Boom):
+                        self.explosion(x + x_v, y + y_v)
                 break  # только объект класса SimpleField
             x += x_v
             y += y_v
@@ -226,6 +237,26 @@ class Board:
                             self.board[i][j].remove(creature)
         if changed:
             self.render(screen)
+
+    def explosion(self, x, y):
+        for i in range(-1, 2):
+            for j in range(-1, 2):
+                if x + i < 0 or x + i >= len(self.board):
+                    continue
+                if y + j < 0 or y + j >= len(self.board):
+                    continue
+                for z in self.board[y + j][x + i]:
+                    if isinstance(z, SimpleField):
+                        continue
+                    elif isinstance(z, Boom):
+                        self.board[y + j][x + i].remove(z)
+                        self.explosion(x + i, y + j)
+                        return
+                    self.board[y + j][x + i].remove(z)
+                self.board[y + j][x + i].append(Pepl_Boom((x + i, y + j)))
+                if self.player_obj.get_pos() == (x + i, y + j):
+                    self.player_obj.alive = False
+                    self.game_run = False
 
     def render(self, screen):
         screen.fill('black')
@@ -257,23 +288,36 @@ class Board:
             return x_index, y_index
         return None
 
-    def generate_field(self):
+    def add_object_to_cell(self, obj, pos=None):
+        # метод для генерации поля, проверяет пустая ли клетка позиции
+        # есил да, то добавляет объект и возвращает True, иначе - возвращает False
+        # если pos не передали генерирует сама
+        if pos is None:
+            pos = randint(0, self.height - 1), randint(0, self.width - 1)
+        if len(self.board[pos[1]][pos[0]]) == 1:
+            self.board[pos[1]][pos[0]].append(obj)
+            return True
+        return False
+
+
+    def generate_field(self, box_count=10, boom_count=10, enemy_count=10):
         self.board = [[[] for _ in range(self.width)] for _ in range(self.height)]
-        t1 = time.time()
         for i in range(self.height):
             for j in range(self.width):
                 self.board[i][j].append(SimpleField())
-        for i in range(10):
-            self.board[randint(0, self.height - 1)][randint(0, self.width - 1)].append(
-                Boom())
-            self.board[randint(0, self.height - 1)][randint(0, self.width - 1)].append(
-                Wall())
-        for i in range(10):
-            x, y = randint(0, self.height - 1), randint(0, self.width - 1)
-            if len(self.board[x][y]) != 1:
-                del self.board[x][y][1:]
-            self.board[x][y].append(
-                Enemy((x, y), choice([0, 90, 180, 270])))
+        for i in range(box_count):
+            result = False
+            while not result:
+                result = self.add_object_to_cell(Wall())
+        for i in range(boom_count):
+            result = False
+            while not result:
+                result = self.add_object_to_cell(Boom())
+        for i in range(enemy_count):
+            result = False
+            while not result:
+                x, y = randint(0, self.height - 1), randint(0, self.width - 1)
+                result = self.add_object_to_cell(Enemy((x, y), choice([0, 90, 180, 270])), pos=(y, x))
             self.enemis.append([x, y])
 
     def start_game(self):
@@ -355,10 +399,11 @@ def main():
             board.enemy_step()
             step = False
         # если изменилась картинка то рендерим
+        if board.game_run:
+            board.shoot_render(screen)
         if changed:
             if board.game_run:
                 board.render(screen)
-                board.shoot_render(screen)
                 board.check_actions()
             else:
                 if not game_over:
