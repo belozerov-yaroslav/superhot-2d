@@ -169,6 +169,7 @@ class Board:
         self.board = [[[] for _ in range(self.width)] for _ in range(self.height)]
 
     def enemy_move(self, enemy, vector):
+        angles = {(0, 1): 180, (0, -1): 0, (1, 0): 270, (-1, 0): 90}
         x_v, y_v = vector
         x, y = enemy.get_pos()
         if not (0 <= x + x_v < self.width and 0 <= y + y_v < self.height):
@@ -180,46 +181,10 @@ class Board:
         self.board[y][x].remove(enemy)
         self.board[y + y_v][x + x_v].append(enemy)
         enemy.x, enemy.y = x + x_v, y + y_v
+        enemy.angle = angles[tuple(vector)]
         return True
 
     def enemy_step(self):  # ходят враги
-        # for enemy in self.enemies:
-        #     for i in self.board[enemy[0]][enemy[1]]:
-        #         if isinstance(i, Enemy):
-        #             x_difference = self.player_obj.y - enemy[0]
-        #             y_difference = self.player_obj.x - enemy[1]
-        #             if abs(x_difference) <= 1 or abs(y_difference) <= 1:
-        #                 i.triggered = True
-        #             if not i.Lose and i.triggered:  # если он видит игрока и прошлый раз он не промазал
-        #                 pass  # то стреляет
-        #                 i.triggered = False
-        #             else:
-        #                 if abs(x_difference) < abs(y_difference):
-        #                     if y_difference < 0:
-        #                         self.board[enemy[0]][enemy[1]].remove(i)
-        #                         i.angle = 90
-        #                         self.board[enemy[0]][enemy[1] - 1].append(i)
-        #                         self.enemies.remove(enemy)
-        #                         self.enemies.append([enemy[0], enemy[1] - 1])
-        #                     else:
-        #                         self.board[enemy[0]][enemy[1]].remove(i)
-        #                         i.angle = 270
-        #                         self.board[enemy[0]][enemy[1] + 1].append(i)
-        #                         self.enemies.remove(enemy)
-        #                         self.enemies.append([enemy[0], enemy[1] + 1])
-        #                 else:
-        #                     if x_difference < 0:
-        #                         self.board[enemy[0]][enemy[1]].remove(i)
-        #                         i.angle = 0
-        #                         self.board[enemy[0] - 1][enemy[1]].append(i)
-        #                         self.enemies.remove(enemy)
-        #                         self.enemies.append([enemy[0] - 1, enemy[1]])
-        #                     else:
-        #                         self.board[enemy[0]][enemy[1]].remove(i)
-        #                         i.angle = 180
-        #                         self.board[enemy[0] + 1][enemy[1]].append(i)
-        #                         self.enemies.remove(enemy)
-        #                         self.enemies.append([enemy[0] + 1, enemy[1]])
         for enemy in self.enemies:
             x, y = enemy.get_pos()
             x_dif = self.player_obj.x - enemy.x
@@ -232,8 +197,17 @@ class Board:
                 pass  # то стреляет
                 continue
             if len(self.board[y + y_dif // abs(y_dif)][x]) > 1 and len(self.board[y][x + x_dif // abs(x_dif)]) > 1:
-                pass  # пасть рвет препятствию
-                print('порвал')
+                # пасть рвет препятствию
+                for i in self.board[y + y_dif // abs(y_dif)][x]:
+                    if isinstance(i, SimpleField):
+                        continue
+                    elif isinstance(i, Boom):
+                        self.explosion(x, y + y_dif // abs(y_dif))
+                        continue
+                    elif isinstance(i, Enemy):
+                        self.enemies.remove(i)
+                    self.board[y + y_dif // abs(y_dif)][x].remove(i)
+                self.board[y + y_dif // abs(y_dif)][x].append(Pepl((x, y + y_dif // abs(y_dif)), enemy.angle, 10))
                 continue
             if abs(x_dif) > abs(y_dif):
                 if self.enemy_move(enemy, [x_dif // abs(x_dif), 0]):
@@ -291,6 +265,8 @@ class Board:
                         self.board[y + j][x + i].remove(z)
                         self.explosion(x + i, y + j)
                         return
+                    elif isinstance(z, Enemy):
+                        self.enemies.remove(z)
                     self.board[y + j][x + i].remove(z)
                 self.board[y + j][x + i].append(Pepl_Boom((x + i, y + j)))
                 if self.player_obj.get_pos() == (x + i, y + j):
