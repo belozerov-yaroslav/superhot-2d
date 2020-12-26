@@ -164,45 +164,99 @@ class Board:
 
         self.board = [[[] for _ in range(self.width)] for _ in range(self.height)]
 
+    def enemy_move(self, enemy, x, y, x1, y1, angle):
+        self.board[x][y].remove(enemy)
+        enemy.angle = angle
+        if not (0 <= x1 < len(self.board[0]) and 0 <= y1 < len(self.board)):
+            return
+        self.board[x1][y1].append(enemy)
+        self.enemis.remove([x, y])
+        self.enemis.append([x1, y1])
+
     def enemy_step(self):  # ходят враги
         for enemy in self.enemis:
             for i in self.board[enemy[0]][enemy[1]]:
                 if isinstance(i, Enemy):
                     x_difference = self.player_obj.y - enemy[0]
                     y_difference = self.player_obj.x - enemy[1]
-                    if abs(x_difference) <= 1 or  abs(y_difference) <= 1:
+                    if abs(x_difference) <= 1 or abs(y_difference) <= 1:
                         i.triggered = True
-                    if not i.Lose and i.triggered: # если он видит игрока и прошлый раз он не промазал
-                        pass # то стреляет
+                    if not i.Lose and i.triggered:  # если он видит игрока и прошлый раз он не промазал
+                        pass  # то стреляет
                         i.triggered = False
                     else:
-                        if abs(x_difference) < abs(y_difference):
-                            if y_difference < 0:
-                                self.board[enemy[0]][enemy[1]].remove(i)
-                                i.angle = 90
-                                self.board[enemy[0]][enemy[1] - 1].append(i)
-                                self.enemis.remove(enemy)
-                                self.enemis.append([enemy[0], enemy[1] - 1])
+                        enem_x = enemy[0]
+                        enem_y = enemy[1]
+                        try:
+                            if abs(x_difference) < abs(y_difference):
+                                if y_difference < 0:
+                                    if len(self.board[enemy[0]][enemy[1] - 1]) == 1:
+                                        self.enemy_move(i, enemy[0], enemy[1], enemy[0], enemy[1] - 1, 0)
+                                        print(1)
+                                    else:
+                                        if enemy[0] + 1 < len(self.board[0]) and len(self.board[enemy[0] + 1][enemy[1]]) == 1:
+                                            self.enemy_move(i, enemy[0], enemy[1], enemy[0] + 1, enemy[1], 270)
+                                        elif enemy[0] - 1 >= 0 and len(self.board[enemy[0] - 1][enemy[1]]):
+                                            self.enemy_move(i, enemy[0], enemy[1], enemy[0] - 1, enemy[1], 90)
+                                        else:
+                                            for i in self.board[enemy[0]][enemy[1] - 1]:
+                                                if isinstance(i, SimpleField):
+                                                    continue
+                                                elif isinstance(i, Boom):
+                                                    self.explosion(enemy[0], enemy[1] - 1)
+                                                self.board[enemy[0]][enemy[1] - 1].remove(i)
+                                            self.board[enemy[0]][enemy[1] - 1].append(Pepl((enemy[0], enemy[1] - 1), i.angle, 10))
+                                else:
+                                    if len(self.board[enemy[0]][enemy[1] + 1]) == 1:
+                                        self.enemy_move(i, enemy[0], enemy[1], enemy[0], enemy[1] + 1, 180)
+                                    else:
+                                        if enemy[0] + 1 < len(self.board[0]) and len(self.board[enemy[0] + 1][enemy[1]]) == 1:
+                                            self.enemy_move(i, enemy[0], enemy[1], enemy[0] + 1, enemy[1], 270)
+                                        elif enemy[0] - 1 >= 0 and len(self.board[enemy[0] - 1][enemy[1]]):
+                                            self.enemy_move(i, enemy[0], enemy[1], enemy[0] - 1, enemy[1], 90)
+                                        else:
+                                            for i in self.board[enemy[0]][enemy[1] + 1]:
+                                                if isinstance(i, SimpleField):
+                                                    continue
+                                                elif isinstance(i, Boom):
+                                                    self.explosion(enemy[0], enemy[1] + 1)
+                                                self.board[enemy[0]][enemy[1] + 1].remove(i)
+                                            self.board[enemy[0]][enemy[1] + 1].append(Pepl((enemy[0], enemy[1] + 1), i.angle, 10))
                             else:
-                                self.board[enemy[0]][enemy[1]].remove(i)
-                                i.angle = 270
-                                self.board[enemy[0]][enemy[1] + 1].append(i)
-                                self.enemis.remove(enemy)
-                                self.enemis.append([enemy[0], enemy[1] + 1])
-                        else:
-                            if x_difference < 0:
-                                self.board[enemy[0]][enemy[1]].remove(i)
-                                i.angle = 0
-                                self.board[enemy[0] - 1][enemy[1]].append(i)
-                                self.enemis.remove(enemy)
-                                self.enemis.append([enemy[0] - 1, enemy[1]])
-                            else:
-                                self.board[enemy[0]][enemy[1]].remove(i)
-                                i.angle = 180
-                                self.board[enemy[0] + 1][enemy[1]].append(i)
-                                self.enemis.remove(enemy)
-                                self.enemis.append([enemy[0] + 1, enemy[1]])
-
+                                if x_difference < 0:
+                                    if len(self.board[enemy[0] - 1][enemy[1]]) == 1:
+                                        self.enemy_move(i, enemy[0], enemy[1], enemy[0] - 1, enemy[1], 90)
+                                    else:
+                                        if enemy[1] + 1 < len(self.board) and len(self.board[enemy[0]][enemy[1] + 1]) == 1:
+                                            self.enemy_move(i, enemy[0], enemy[1], enemy[0], enemy[1] + 1, 180)
+                                        elif enemy[1] - 1 >= 0 and len(self.board[enemy[0]][enemy[1] - 1]):
+                                            self.enemy_move(i, enemy[0], enemy[1], enemy[0], enemy[1] - 1, 0)
+                                        else:
+                                            for i in self.board[enemy[0] - 1][enemy[1]]:
+                                                if isinstance(i, SimpleField):
+                                                    continue
+                                                elif isinstance(i, Boom):
+                                                    self.explosion(enemy[0] - 1, enemy[1])
+                                                self.board[enemy[0] - 1][enemy[1]].remove(i)
+                                            self.board[enemy[0] - 1][enemy[1]].append(Pepl((enemy[0] - 1, enemy[1]), i.angle, 10))
+                                else:
+                                    if len(self.board[enemy[0] + 1][enemy[1]]) == 1:
+                                        self.enemy_move(i, enemy[0], enemy[1], enemy[0] + 1, enemy[1], 270)
+                                    else:
+                                        if enemy[1] + 1 < len(self.board) and len(self.board[enemy[0]][enemy[1] + 1]) == 1:
+                                            self.enemy_move(i, enemy[0], enemy[1], enemy[0], enemy[1] + 1, 180)
+                                        elif enemy[1] - 1 >= 0 and len(self.board[enemy[0]][enemy[1] - 1]):
+                                            self.enemy_move(i, enemy[0], enemy[1], enemy[0], enemy[1] - 1, 0)
+                                        else:
+                                            for i in self.board[enemy[0] + 1][enemy[1]]:
+                                                if isinstance(i, SimpleField):
+                                                    continue
+                                                elif isinstance(i, Boom):
+                                                    self.explosion(enemy[0] + 1, enemy[1])
+                                                self.board[enemy[0] + 1][enemy[1]].remove(i)
+                                            self.board[enemy[0] + 1][enemy[1]].append(Pepl((enemy[0] + 1, enemy[1]), i.angle, 10))
+                        except IndexError:
+                            pass
 
     # Функция, отслеживающая время отрисовки лазеров
     def player_shoot(self, vector):
@@ -287,12 +341,12 @@ class Board:
         for i in range(self.height):
             for j in range(self.width):
                 self.board[i][j].append(SimpleField())
-        for i in range(10):
+        for i in range(0):
             self.board[randint(0, self.height - 1)][randint(0, self.width - 1)].append(
                 Boom())
             self.board[randint(0, self.height - 1)][randint(0, self.width - 1)].append(
                 Wall())
-        for i in range(10):
+        for i in range(1):
             x, y = randint(0, self.height - 1), randint(0, self.width - 1)
             if len(self.board[x][y]) != 1:
                 del self.board[x][y][1:]
