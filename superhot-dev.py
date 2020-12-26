@@ -185,14 +185,11 @@ class Board:
                         pass  # то стреляет
                         i.triggered = False
                     else:
-                        enem_x = enemy[0]
-                        enem_y = enemy[1]
                         try:
                             if abs(x_difference) < abs(y_difference):
                                 if y_difference < 0:
                                     if len(self.board[enemy[0]][enemy[1] - 1]) == 1:
                                         self.enemy_move(i, enemy[0], enemy[1], enemy[0], enemy[1] - 1, 0)
-                                        print(1)
                                     else:
                                         if enemy[0] + 1 < len(self.board[0]) and len(self.board[enemy[0] + 1][enemy[1]]) == 1:
                                             self.enemy_move(i, enemy[0], enemy[1], enemy[0] + 1, enemy[1], 270)
@@ -341,12 +338,13 @@ class Board:
         for i in range(self.height):
             for j in range(self.width):
                 self.board[i][j].append(SimpleField())
-        for i in range(0):
-            self.board[randint(0, self.height - 1)][randint(0, self.width - 1)].append(
+        for i in range(10):
+           self.board[randint(0, self.height - 1)][randint(0, self.width - 1)].append(
                 Boom())
+            pass
             self.board[randint(0, self.height - 1)][randint(0, self.width - 1)].append(
                 Wall())
-        for i in range(1):
+        for i in range(10):
             x, y = randint(0, self.height - 1), randint(0, self.width - 1)
             if len(self.board[x][y]) != 1:
                 del self.board[x][y][1:]
