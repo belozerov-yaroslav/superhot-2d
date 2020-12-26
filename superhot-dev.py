@@ -189,12 +189,12 @@ class Board:
                             if abs(x_difference) < abs(y_difference):
                                 if y_difference < 0:
                                     if len(self.board[enemy[0]][enemy[1] - 1]) == 1:
-                                        self.enemy_move(i, enemy[0], enemy[1], enemy[0], enemy[1] - 1, 0)
+                                        self.enemy_move(i, enemy[0], enemy[1], enemy[0], enemy[1] - 1, 90)
                                     else:
                                         if enemy[0] + 1 < len(self.board[0]) and len(self.board[enemy[0] + 1][enemy[1]]) == 1:
-                                            self.enemy_move(i, enemy[0], enemy[1], enemy[0] + 1, enemy[1], 270)
+                                            self.enemy_move(i, enemy[0], enemy[1], enemy[0] + 1, enemy[1], 180)
                                         elif enemy[0] - 1 >= 0 and len(self.board[enemy[0] - 1][enemy[1]]):
-                                            self.enemy_move(i, enemy[0], enemy[1], enemy[0] - 1, enemy[1], 90)
+                                            self.enemy_move(i, enemy[0], enemy[1], enemy[0] - 1, enemy[1], 0)
                                         else:
                                             for i in self.board[enemy[0]][enemy[1] - 1]:
                                                 if isinstance(i, SimpleField):
@@ -205,12 +205,12 @@ class Board:
                                             self.board[enemy[0]][enemy[1] - 1].append(Pepl((enemy[0], enemy[1] - 1), i.angle, 10))
                                 else:
                                     if len(self.board[enemy[0]][enemy[1] + 1]) == 1:
-                                        self.enemy_move(i, enemy[0], enemy[1], enemy[0], enemy[1] + 1, 180)
+                                        self.enemy_move(i, enemy[0], enemy[1], enemy[0], enemy[1] + 1, 270)
                                     else:
                                         if enemy[0] + 1 < len(self.board[0]) and len(self.board[enemy[0] + 1][enemy[1]]) == 1:
-                                            self.enemy_move(i, enemy[0], enemy[1], enemy[0] + 1, enemy[1], 270)
+                                            self.enemy_move(i, enemy[0], enemy[1], enemy[0] + 1, enemy[1], 180)
                                         elif enemy[0] - 1 >= 0 and len(self.board[enemy[0] - 1][enemy[1]]):
-                                            self.enemy_move(i, enemy[0], enemy[1], enemy[0] - 1, enemy[1], 90)
+                                            self.enemy_move(i, enemy[0], enemy[1], enemy[0] - 1, enemy[1], 0)
                                         else:
                                             for i in self.board[enemy[0]][enemy[1] + 1]:
                                                 if isinstance(i, SimpleField):
@@ -222,12 +222,12 @@ class Board:
                             else:
                                 if x_difference < 0:
                                     if len(self.board[enemy[0] - 1][enemy[1]]) == 1:
-                                        self.enemy_move(i, enemy[0], enemy[1], enemy[0] - 1, enemy[1], 90)
+                                        self.enemy_move(i, enemy[0], enemy[1], enemy[0] - 1, enemy[1], 0)
                                     else:
                                         if enemy[1] + 1 < len(self.board) and len(self.board[enemy[0]][enemy[1] + 1]) == 1:
-                                            self.enemy_move(i, enemy[0], enemy[1], enemy[0], enemy[1] + 1, 180)
+                                            self.enemy_move(i, enemy[0], enemy[1], enemy[0], enemy[1] + 1, 270)
                                         elif enemy[1] - 1 >= 0 and len(self.board[enemy[0]][enemy[1] - 1]):
-                                            self.enemy_move(i, enemy[0], enemy[1], enemy[0], enemy[1] - 1, 0)
+                                            self.enemy_move(i, enemy[0], enemy[1], enemy[0], enemy[1] - 1, 90)
                                         else:
                                             for i in self.board[enemy[0] - 1][enemy[1]]:
                                                 if isinstance(i, SimpleField):
@@ -238,12 +238,12 @@ class Board:
                                             self.board[enemy[0] - 1][enemy[1]].append(Pepl((enemy[0] - 1, enemy[1]), i.angle, 10))
                                 else:
                                     if len(self.board[enemy[0] + 1][enemy[1]]) == 1:
-                                        self.enemy_move(i, enemy[0], enemy[1], enemy[0] + 1, enemy[1], 270)
+                                        self.enemy_move(i, enemy[0], enemy[1], enemy[0] + 1, enemy[1], 180)
                                     else:
                                         if enemy[1] + 1 < len(self.board) and len(self.board[enemy[0]][enemy[1] + 1]) == 1:
-                                            self.enemy_move(i, enemy[0], enemy[1], enemy[0], enemy[1] + 1, 180)
+                                            self.enemy_move(i, enemy[0], enemy[1], enemy[0], enemy[1] + 1, 270)
                                         elif enemy[1] - 1 >= 0 and len(self.board[enemy[0]][enemy[1] - 1]):
-                                            self.enemy_move(i, enemy[0], enemy[1], enemy[0], enemy[1] - 1, 0)
+                                            self.enemy_move(i, enemy[0], enemy[1], enemy[0], enemy[1] - 1, 90)
                                         else:
                                             for i in self.board[enemy[0] + 1][enemy[1]]:
                                                 if isinstance(i, SimpleField):
@@ -339,9 +339,8 @@ class Board:
             for j in range(self.width):
                 self.board[i][j].append(SimpleField())
         for i in range(10):
-           self.board[randint(0, self.height - 1)][randint(0, self.width - 1)].append(
+            self.board[randint(0, self.height - 1)][randint(0, self.width - 1)].append(
                 Boom())
-            pass
             self.board[randint(0, self.height - 1)][randint(0, self.width - 1)].append(
                 Wall())
         for i in range(10):
