@@ -17,5 +17,7 @@ pepl_sprite = 'pepl.jpg'
 boom_sprite = 'cell1_tile_with_boom.jpg'
 pepl_boom_sprite = 'pepel_boom.jpg'
 game_over_sprite = 'game_over.png'
+game_win_screen = 'game_win.png'
+debug_mode = 1
 
 cell_size = 48  # в пикселях

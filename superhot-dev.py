@@ -71,10 +71,15 @@ class Enemy(Creature):
         self.x, self.y = pos
         self.Lose = False
         self.alive = alive
+        self.triggered_vector = [0, 0]
 
     def get_pos(self):
         return self.x, self.y
 
+    def __repr__(self):
+        return f'Enemy Triggered - {self.triggered},' \
+               f' Triggered vector - {self.triggered_vector},' \
+               f' angle - {self.angle}, x - {self.x}, y - {self.y}, Lose - {self.Lose}'
 
 class Player(Creature):
     image = load_image(config.player_sprite, -1)
@@ -178,23 +183,59 @@ class Board:
             if isinstance(cell_obj, Wall) or isinstance(cell_obj, Boom) or isinstance(cell_obj, Enemy):
                 return False
         # если все нормально
-        self.board[y][x].remove(enemy)
-        self.board[y + y_v][x + x_v].append(enemy)
-        enemy.x, enemy.y = x + x_v, y + y_v
-        enemy.angle = angles[tuple(vector)]
-        return True
+        if enemy in self.board[y][x]:
+            self.board[y][x].remove(enemy)
+            self.board[y + y_v][x + x_v].append(enemy)
+            enemy.x, enemy.y = x + x_v, y + y_v
+            enemy.angle = angles[tuple(vector)]
+            return True
+        else:
+            return False
 
     def enemy_step(self):  # ходят враги
+        destroed = set()
+        angles = {(0, 1): 180, (0, -1): 0, (1, 0): 270, (-1, 0): 90}
         for enemy in self.enemies:
             x, y = enemy.get_pos()
             x_dif = self.player_obj.x - enemy.x
             y_dif = self.player_obj.y - enemy.y
-            if abs(x_dif) <= 1 or abs(y_dif) <= 1:
+            if x_dif == 0 or y_dif == 0:
+                enemy.Lose = False
                 enemy.triggered = True
-                continue
+                enemy.triggered_vector = [0, 1] if x_dif == 0 and y_dif > 0 else [0, -1] \
+                if x_dif == 0 and y_dif < 0 else [1, 0] if y_dif == 0 and x_dif > 0 else [-1, 0]
+                enemy.angle = angles[tuple(enemy.triggered_vector)]
+            if abs(x_dif) <= 1 and enemy.triggered == False and enemy.Lose == False:
+                enemy.triggered_vector = [0, y_dif // abs(y_dif)]
+                enemy.triggered = True
+                enemy.angle = angles[tuple(enemy.triggered_vector)]
+            if abs(y_dif) <= 1 and enemy.triggered == False and enemy.Lose == False:
+                enemy.triggered = True
+                enemy.triggered_vector = [x_dif // abs(x_dif), 0]
+                enemy.angle = angles[tuple(enemy.triggered_vector)]
             if not enemy.Lose and enemy.triggered:  # если он видит игрока и прошлый раз он не промазал
                 enemy.triggered = False
-                pass  # то стреляет
+                enemy.Lose = True
+                x_v, y_v = enemy.triggered_vector
+                x, y = enemy.get_pos()
+                while True:
+                    if not (0 <= x + x_v < self.width and 0 <= y + y_v < self.height):
+                        break
+                    if self.player_obj.get_pos() == (x + x_v, y + y_v):
+                        self.game_run = False
+                        self.board[x + x_v][y + y_v].append(Pepl((x + x_v, y + y_v), enemy.angle))
+                        break
+                    if len(self.board[y + y_v][
+                               x + x_v]) != 1:  # в боарде хранятся списки обектов, и если ничего нет, то там
+                        for i in self.board[y + y_v][x + x_v]:
+                            if isinstance(i, Wall) or isinstance(i, Enemy):
+                                destroed.add((y + y_v, x + x_v, i, enemy.angle))
+                            elif isinstance(i, Boom):
+                                self.explosion(x + x_v, y + y_v)
+                        break  # только объект класса SimpleField
+                    x += x_v
+                    y += y_v
+                    self.board[y][x].append(ShootSprite((y, x), enemy.angle, SHOOT_LENGTH))
                 continue
             if len(self.board[y + y_dif // abs(y_dif)][x]) > 1 and len(self.board[y][x + x_dif // abs(x_dif)]) > 1:
                 # пасть рвет препятствию
@@ -205,7 +246,8 @@ class Board:
                         self.explosion(x, y + y_dif // abs(y_dif))
                         continue
                     elif isinstance(i, Enemy):
-                        self.enemies.remove(i)
+                        if i in self.enemies:
+                            self.enemies.remove(i)
                     self.board[y + y_dif // abs(y_dif)][x].remove(i)
                 self.board[y + y_dif // abs(y_dif)][x].append(Pepl((x, y + y_dif // abs(y_dif)), enemy.angle, 10))
                 continue
@@ -216,6 +258,18 @@ class Board:
                 continue
             else:
                 self.enemy_move(enemy, [x_dif // abs(x_dif), 0])
+            enemy.Lose = False
+        for elem in destroed:
+            if isinstance(elem[2], Player):
+                self.game_run = False
+                self.board[elem[0]][elem[1]].append(Pepl((elem[0], elem[1]), elem[3]))
+                break
+            if isinstance(elem[2], Enemy):
+                if elem[2] in self.enemies:
+                    self.enemies.remove(elem[2 ])
+            if elem[2] in self.board[elem[0]][elem[1]]:
+                self.board[elem[0]][elem[1]].remove(elem[2])
+                self.board[elem[0]][elem[1]].append(Pepl((elem[0], elem[1]), elem[3]))
 
     # Функция, отслеживающая время отрисовки лазеров
     def player_shoot(self, vector):
@@ -228,6 +282,9 @@ class Board:
                 for i in self.board[y + y_v][x + x_v]:
                     if isinstance(i, Wall) or isinstance(i, Enemy):
                         self.board[y + y_v][x + x_v].remove(i)
+                        if isinstance(i, Enemy):
+                            if i in self.enemies:
+                                self.enemies.remove(i)
                         self.board[y + y_v][x + x_v].append(
                             Pepl((x + x_v, y + y_v), self.player_obj.angle, 10))
                     elif isinstance(i, Boom):
@@ -266,7 +323,8 @@ class Board:
                         self.explosion(x + i, y + j)
                         return
                     elif isinstance(z, Enemy):
-                        self.enemies.remove(z)
+                        if z in self.enemies:
+                            self.enemies.remove(z)
                     self.board[y + j][x + i].remove(z)
                 self.board[y + j][x + i].append(Pepl_Boom((x + i, y + j)))
                 if self.player_obj.get_pos() == (x + i, y + j):
@@ -288,11 +346,12 @@ class Board:
         self.sprites.update()
         self.sprites.draw(screen)
 
-    def render_game_over_screen(self, screen):
-        screen.fill('black')
-        self.sprites.empty()
-        self.sprites.add(StandartSprite(pygame.transform.scale(load_image(config.game_over_sprite),
-                                                               (screen.get_width(), screen.get_height())), (0, 0), 0))
+    def render_full_screen(self, screen, path):
+        #screen.fill('black')
+        #self.sprites.empty()
+        image = pygame.transform.scale(load_image(path), (screen.get_width(), screen.get_height()))
+        image.set_alpha(170)
+        self.sprites.add(StandartSprite(image, (0, 0), 0))
         self.sprites.draw(screen)
 
     def get_cell(self, pos):
@@ -314,7 +373,7 @@ class Board:
             return True
         return False
 
-    def generate_field(self, box_count=10, boom_count=10, enemy_count=10):
+    def generate_field(self, box_count=10, boom_count=10, enemy_count=2):
         self.board = [[[] for _ in range(self.width)] for _ in range(self.height)]
         for i in range(self.height):
             for j in range(self.width):
@@ -347,8 +406,9 @@ class Board:
                 self.game_run = False
 
     def check_enemy_lives(self):
-        # print(self.enemies)
-        pass
+        if not len(self.enemies):
+            self.game_run = False
+        return len(self.enemies)
 
     def move_player(self, vector):
         x_v, y_v = vector
@@ -356,7 +416,7 @@ class Board:
         if not (0 <= x + x_v < self.width and 0 <= y + y_v < self.height):
             raise BorderError
         for cell_obj in self.board[y + y_v][x + x_v]:
-            if isinstance(cell_obj, Wall) or isinstance(cell_obj, Boom):
+            if isinstance(cell_obj, Wall) or isinstance(cell_obj, Boom) or isinstance(cell_obj, Enemy):
                 raise WallStepError
         # если все нормально
         self.player_obj.set_pos(x + x_v, y + y_v)
@@ -387,6 +447,9 @@ def main():
             if event.type == pygame.QUIT:
                 running = False
                 continue
+            if config.debug_mode:
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    print(board.board[board.get_cell(event.pos)[1]][board.get_cell(event.pos)[0]])
             if event.type == pygame.KEYDOWN:
                 if board.game_run:
                     # блок перемещения игрока
@@ -419,16 +482,21 @@ def main():
         if step:
             board.enemy_step()
             step = False
+        board.check_enemy_lives()
         # если изменилась картинка то рендерим
         if board.game_run:
             board.shoot_render(screen)
         if changed:
             if board.game_run:
                 board.render(screen)
-                board.check_actions()
+                #board.check_actions()
             else:
                 if not game_over:
-                    board.render_game_over_screen(screen)
+                    board.render(screen)
+                    if board.check_enemy_lives():
+                        board.render_full_screen(screen, config.game_over_sprite)
+                    else:
+                        board.render_full_screen(screen, config.game_win_screen)
                     game_over = True
                 else:
                     player_vector = [0, -1]
@@ -436,11 +504,6 @@ def main():
                     game_over = False
             changed = False
             board.check_enemy_lives()
-        # for i in board.board:
-        #     for j in i:
-        #         if len(j) > 2:
-        #             print(j)
-        #             print('обнаружен враг монолита')
         # уменьшение таймера
         pygame.display.flip()
         clock.tick(fps)
