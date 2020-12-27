@@ -71,10 +71,15 @@ class Enemy(Creature):
         self.x, self.y = pos
         self.Lose = False
         self.alive = alive
+        self.triggered_vector = [0, 0]
 
     def get_pos(self):
         return self.x, self.y
 
+    def __repr__(self):
+        return f'Enemy Triggered - {self.triggered},' \
+               f' Triggered vector - {self.triggered_vector},' \
+               f' angle - {self.angle}, x - {self.x}, y - {self.y}, Lose - {self.Lose}'
 
 class Player(Creature):
     image = load_image(config.player_sprite, -1)
@@ -185,16 +190,48 @@ class Board:
         return True
 
     def enemy_step(self):  # ходят враги
+        destroed = []
         for enemy in self.enemies:
             x, y = enemy.get_pos()
             x_dif = self.player_obj.x - enemy.x
             y_dif = self.player_obj.y - enemy.y
-            if abs(x_dif) <= 1 or abs(y_dif) <= 1:
-                enemy.triggered = True
-                continue
+            if abs(x_dif) <= 1 and enemy.triggered == False and enemy.Lose == False:
+                f = True
+                if x_dif == 0:
+                    f = False
+                    enemy.triggered = True
+                    enemy.triggered_vector = [0, y_dif // abs(y_dif)]
+                if f:
+                    enemy.triggered_vector = [x_dif // abs(x_dif), 0]
+                    enemy.triggered = True
+            if abs(y_dif) <= 1 and enemy.triggered == False and enemy.Lose == False:
+                f = True
+                if y_dif == 0:
+                    f = False
+                    enemy.triggered = True
+                    enemy.triggered_vector = [x_dif // abs(x_dif), 0]
+                if f:
+                    enemy.triggered_vector = [0, y_dif // abs(y_dif)]
+                    enemy.triggered = True
             if not enemy.Lose and enemy.triggered:  # если он видит игрока и прошлый раз он не промазал
                 enemy.triggered = False
-                pass  # то стреляет
+                enemy.Lose = True
+                x_v, y_v = enemy.triggered_vector
+                x, y = enemy.get_pos()
+                while True:
+                    if not (0 <= x + x_v < self.width and 0 <= y + y_v < self.height):
+                        break
+                    if len(self.board[y + y_v][
+                               x + x_v]) != 1:  # в боарде хранятся списки обектов, и если ничего нет, то там
+                        for i in self.board[y + y_v][x + x_v]:
+                            if isinstance(i, Wall) or isinstance(i, Enemy):
+                                destroed.append((y + y_v, x + x_v, i, enemy.angle))
+                            elif isinstance(i, Boom):
+                                self.explosion(x + x_v, y + y_v)
+                        break  # только объект класса SimpleField
+                    x += x_v
+                    y += y_v
+                    self.board[y][x].append(ShootSprite((y, x), enemy.angle, SHOOT_LENGTH))
                 continue
             if len(self.board[y + y_dif // abs(y_dif)][x]) > 1 and len(self.board[y][x + x_dif // abs(x_dif)]) > 1:
                 # пасть рвет препятствию
@@ -216,6 +253,7 @@ class Board:
                 continue
             else:
                 self.enemy_move(enemy, [x_dif // abs(x_dif), 0])
+            enemy.Lose = False
 
     # Функция, отслеживающая время отрисовки лазеров
     def player_shoot(self, vector):
@@ -228,6 +266,8 @@ class Board:
                 for i in self.board[y + y_v][x + x_v]:
                     if isinstance(i, Wall) or isinstance(i, Enemy):
                         self.board[y + y_v][x + x_v].remove(i)
+                        if isinstance(i, Enemy):
+                            self.enemies.remove(i)
                         self.board[y + y_v][x + x_v].append(
                             Pepl((x + x_v, y + y_v), self.player_obj.angle, 10))
                     elif isinstance(i, Boom):
@@ -387,6 +427,9 @@ def main():
             if event.type == pygame.QUIT:
                 running = False
                 continue
+            if config.debug_mode:
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    print(board.board[board.get_cell(event.pos)[1]][board.get_cell(event.pos)[0]])
             if event.type == pygame.KEYDOWN:
                 if board.game_run:
                     # блок перемещения игрока
@@ -444,11 +487,6 @@ def main():
         # уменьшение таймера
         pygame.display.flip()
         clock.tick(fps)
-        for i in board.board:
-            for j in i:
-                if len(j) > 2:
-                    print(j)
-                    print('обнаружен враг монолита')
 
     pygame.quit()
 
