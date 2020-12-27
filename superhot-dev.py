@@ -141,6 +141,9 @@ class ShootSprite(CellObject):
         self.angle = angle
 
 
+class EnemyShootSprite(ShootSprite):
+    image = load_image(config.enemy_lazer_sprite)
+
 class Pepl(CellObject):
     image = load_image(config.pepl_sprite)
 
@@ -149,14 +152,13 @@ class Pepl(CellObject):
         self.timer = timer
         self.angle = angle
 
+class EnemyPepl(Pepl):
+    image = load_image(config.enemy_pepl_sprite)
+
+
 
 class Pepl_Boom(Pepl):
     image = load_image(config.pepl_boom_sprite)
-
-    def __init__(self, pos, angle=0, timer=10):
-        super().__init__(pos)
-        self.timer = timer
-        self.angle = angle
 
 
 class Board:
@@ -223,7 +225,7 @@ class Board:
                         break
                     if self.player_obj.get_pos() == (x + x_v, y + y_v):
                         self.game_run = False
-                        self.board[x + x_v][y + y_v].append(Pepl((x + x_v, y + y_v), enemy.angle))
+                        self.board[y + y_v][x + x_v].append(EnemyPepl((y + y_v, x + x_v), enemy.angle))
                         break
                     if len(self.board[y + y_v][
                                x + x_v]) != 1:  # в боарде хранятся списки обектов, и если ничего нет, то там
@@ -235,7 +237,7 @@ class Board:
                         break  # только объект класса SimpleField
                     x += x_v
                     y += y_v
-                    self.board[y][x].append(ShootSprite((y, x), enemy.angle, SHOOT_LENGTH))
+                    self.board[y][x].append(EnemyShootSprite((y, x), enemy.angle, SHOOT_LENGTH))
                 continue
             if len(self.board[y + y_dif // abs(y_dif)][x]) > 1 and len(self.board[y][x + x_dif // abs(x_dif)]) > 1:
                 # пасть рвет препятствию
@@ -249,7 +251,7 @@ class Board:
                         if i in self.enemies:
                             self.enemies.remove(i)
                     self.board[y + y_dif // abs(y_dif)][x].remove(i)
-                self.board[y + y_dif // abs(y_dif)][x].append(Pepl((x, y + y_dif // abs(y_dif)), enemy.angle, 10))
+                self.board[y + y_dif // abs(y_dif)][x].append(EnemyPepl((x, y + y_dif // abs(y_dif)), enemy.angle, 10))
                 continue
             if abs(x_dif) > abs(y_dif):
                 if self.enemy_move(enemy, [x_dif // abs(x_dif), 0]):
@@ -260,16 +262,12 @@ class Board:
                 self.enemy_move(enemy, [x_dif // abs(x_dif), 0])
             enemy.Lose = False
         for elem in destroed:
-            if isinstance(elem[2], Player):
-                self.game_run = False
-                self.board[elem[0]][elem[1]].append(Pepl((elem[0], elem[1]), elem[3]))
-                break
             if isinstance(elem[2], Enemy):
                 if elem[2] in self.enemies:
-                    self.enemies.remove(elem[2 ])
+                    self.enemies.remove(elem[2])
             if elem[2] in self.board[elem[0]][elem[1]]:
                 self.board[elem[0]][elem[1]].remove(elem[2])
-                self.board[elem[0]][elem[1]].append(Pepl((elem[0], elem[1]), elem[3]))
+                self.board[elem[0]][elem[1]].append(EnemyPepl((elem[0], elem[1]), elem[3]))
 
     # Функция, отслеживающая время отрисовки лазеров
     def player_shoot(self, vector):
@@ -299,7 +297,7 @@ class Board:
         for i in range(self.height):
             for j in range(self.width):
                 for creature in self.board[i][j]:
-                    if isinstance(creature, ShootSprite) or isinstance(creature, Pepl):
+                    if isinstance(creature, (ShootSprite, Pepl, EnemyShootSprite, EnemyPepl)):
                         if creature.timer > 0:
                             creature.timer -= 1
                         else:
