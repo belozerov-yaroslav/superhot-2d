@@ -191,28 +191,22 @@ class Board:
 
     def enemy_step(self):  # ходят враги
         destroed = []
+        angles = {(0, 1): 180, (0, -1): 0, (1, 0): 270, (-1, 0): 90}
         for enemy in self.enemies:
             x, y = enemy.get_pos()
             x_dif = self.player_obj.x - enemy.x
             y_dif = self.player_obj.y - enemy.y
+            print(x_dif, y_dif)
+            if x_dif == 0 or y_dif == 0:
+                enemy.Lose = False
             if abs(x_dif) <= 1 and enemy.triggered == False and enemy.Lose == False:
-                f = True
-                if x_dif == 0:
-                    f = False
-                    enemy.triggered = True
-                    enemy.triggered_vector = [0, y_dif // abs(y_dif)]
-                if f:
-                    enemy.triggered_vector = [x_dif // abs(x_dif), 0]
-                    enemy.triggered = True
+                enemy.triggered_vector = [0, y_dif // abs(y_dif)]
+                enemy.triggered = True
+                enemy.angle = angles[tuple(enemy.triggered_vector)]
             if abs(y_dif) <= 1 and enemy.triggered == False and enemy.Lose == False:
-                f = True
-                if y_dif == 0:
-                    f = False
-                    enemy.triggered = True
-                    enemy.triggered_vector = [x_dif // abs(x_dif), 0]
-                if f:
-                    enemy.triggered_vector = [0, y_dif // abs(y_dif)]
-                    enemy.triggered = True
+                enemy.triggered = True
+                enemy.triggered_vector = [x_dif // abs(x_dif), 0]
+                enemy.angle = angles[tuple(enemy.triggered_vector)]
             if not enemy.Lose and enemy.triggered:  # если он видит игрока и прошлый раз он не промазал
                 enemy.triggered = False
                 enemy.Lose = True
@@ -396,7 +390,7 @@ class Board:
         if not (0 <= x + x_v < self.width and 0 <= y + y_v < self.height):
             raise BorderError
         for cell_obj in self.board[y + y_v][x + x_v]:
-            if isinstance(cell_obj, Wall) or isinstance(cell_obj, Boom):
+            if isinstance(cell_obj, Wall) or isinstance(cell_obj, Boom) or isinstance(cell_obj, Enemy):
                 raise WallStepError
         # если все нормально
         self.player_obj.set_pos(x + x_v, y + y_v)
