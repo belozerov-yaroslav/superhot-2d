@@ -190,26 +190,29 @@ class Board:
         return True
 
     def enemy_step(self):  # ходят враги
-        destroed = set()
-        angles = {(0, 1): 180, (0, -1): 0, (1, 0): 270, (-1, 0): 90}
+        destroed = []
         for enemy in self.enemies:
             x, y = enemy.get_pos()
             x_dif = self.player_obj.x - enemy.x
             y_dif = self.player_obj.y - enemy.y
-            if x_dif == 0 or y_dif == 0:
-                enemy.Lose = False
-                enemy.triggered = True
-                enemy.triggered_vector = [0, 1] if x_dif == 0 and y_dif > 0 else [0, -1] \
-                if x_dif == 0 and y_dif < 0 else [1, 0] if y_dif == 0 and x_dif > 0 else [-1, 0]
-                enemy.angle = angles[tuple(enemy.triggered_vector)]
             if abs(x_dif) <= 1 and enemy.triggered == False and enemy.Lose == False:
-                enemy.triggered_vector = [0, y_dif // abs(y_dif)]
-                enemy.triggered = True
-                enemy.angle = angles[tuple(enemy.triggered_vector)]
+                f = True
+                if x_dif == 0:
+                    f = False
+                    enemy.triggered = True
+                    enemy.triggered_vector = [0, y_dif // abs(y_dif)]
+                if f:
+                    enemy.triggered_vector = [x_dif // abs(x_dif), 0]
+                    enemy.triggered = True
             if abs(y_dif) <= 1 and enemy.triggered == False and enemy.Lose == False:
-                enemy.triggered = True
-                enemy.triggered_vector = [x_dif // abs(x_dif), 0]
-                enemy.angle = angles[tuple(enemy.triggered_vector)]
+                f = True
+                if y_dif == 0:
+                    f = False
+                    enemy.triggered = True
+                    enemy.triggered_vector = [x_dif // abs(x_dif), 0]
+                if f:
+                    enemy.triggered_vector = [0, y_dif // abs(y_dif)]
+                    enemy.triggered = True
             if not enemy.Lose and enemy.triggered:  # если он видит игрока и прошлый раз он не промазал
                 enemy.triggered = False
                 enemy.Lose = True
@@ -218,15 +221,11 @@ class Board:
                 while True:
                     if not (0 <= x + x_v < self.width and 0 <= y + y_v < self.height):
                         break
-                    if self.player_obj.get_pos() == (x + x_v, y + y_v):
-                        self.game_run = False
-                        self.board[x + x_v][y + y_v].append(Pepl((x + x_v, y + y_v), enemy.angle))
-                        break
                     if len(self.board[y + y_v][
                                x + x_v]) != 1:  # в боарде хранятся списки обектов, и если ничего нет, то там
                         for i in self.board[y + y_v][x + x_v]:
                             if isinstance(i, Wall) or isinstance(i, Enemy):
-                                destroed.add((y + y_v, x + x_v, i, enemy.angle))
+                                destroed.append((y + y_v, x + x_v, i, enemy.angle))
                             elif isinstance(i, Boom):
                                 self.explosion(x + x_v, y + y_v)
                         break  # только объект класса SimpleField
@@ -243,8 +242,7 @@ class Board:
                         self.explosion(x, y + y_dif // abs(y_dif))
                         continue
                     elif isinstance(i, Enemy):
-                        if i in self.enemies:
-                            self.enemies.remove(i)
+                        self.enemies.remove(i)
                     self.board[y + y_dif // abs(y_dif)][x].remove(i)
                 self.board[y + y_dif // abs(y_dif)][x].append(Pepl((x, y + y_dif // abs(y_dif)), enemy.angle, 10))
                 continue
@@ -256,17 +254,6 @@ class Board:
             else:
                 self.enemy_move(enemy, [x_dif // abs(x_dif), 0])
             enemy.Lose = False
-        for elem in destroed:
-            if isinstance(elem[2], Player):
-                self.game_run = False
-                self.board[elem[0]][elem[1]].append(Pepl((elem[0], elem[1]), elem[3]))
-                break
-            if isinstance(elem[2], Enemy):
-                if elem[2] in self.enemies:
-                    self.enemies.remove(elem[2 ])
-            if elem[2] in self.board[elem[0]][elem[1]]:
-                self.board[elem[0]][elem[1]].remove(elem[2])
-                self.board[elem[0]][elem[1]].append(Pepl((elem[0], elem[1]), elem[3]))
 
     # Функция, отслеживающая время отрисовки лазеров
     def player_shoot(self, vector):
@@ -280,8 +267,7 @@ class Board:
                     if isinstance(i, Wall) or isinstance(i, Enemy):
                         self.board[y + y_v][x + x_v].remove(i)
                         if isinstance(i, Enemy):
-                            if i in self.enemies:
-                                self.enemies.remove(i)
+                            self.enemies.remove(i)
                         self.board[y + y_v][x + x_v].append(
                             Pepl((x + x_v, y + y_v), self.player_obj.angle, 10))
                     elif isinstance(i, Boom):
@@ -343,12 +329,10 @@ class Board:
         self.sprites.draw(screen)
 
     def render_game_over_screen(self, screen):
-        #screen.fill('black')
-        #self.sprites.empty()
-        image = pygame.transform.scale(load_image(config.game_over_sprite),
-                                                               (screen.get_width(), screen.get_height()))
-        image.set_alpha(170)
-        self.sprites.add(StandartSprite(image, (0, 0), 0))
+        screen.fill('black')
+        self.sprites.empty()
+        self.sprites.add(StandartSprite(pygame.transform.scale(load_image(config.game_over_sprite),
+                                                               (screen.get_width(), screen.get_height())), (0, 0), 0))
         self.sprites.draw(screen)
 
     def get_cell(self, pos):
@@ -412,7 +396,7 @@ class Board:
         if not (0 <= x + x_v < self.width and 0 <= y + y_v < self.height):
             raise BorderError
         for cell_obj in self.board[y + y_v][x + x_v]:
-            if isinstance(cell_obj, Wall) or isinstance(cell_obj, Boom) or isinstance(cell_obj, Enemy):
+            if isinstance(cell_obj, Wall) or isinstance(cell_obj, Boom):
                 raise WallStepError
         # если все нормально
         self.player_obj.set_pos(x + x_v, y + y_v)
@@ -484,10 +468,9 @@ def main():
         if changed:
             if board.game_run:
                 board.render(screen)
-                #board.check_actions()
+                board.check_actions()
             else:
                 if not game_over:
-                    board.render(screen)
                     board.render_game_over_screen(screen)
                     game_over = True
                 else:
