@@ -12,7 +12,7 @@ pygame.init()
 n1 = 15
 n2 = 15
 cs = 48
-size = 40 + n1 * cs, 40 + n2 * cs
+size = 130 + n1 * cs, 130 + n2 * cs
 screen = pygame.display.set_mode(size)
 pygame.display.set_caption('Superhot 2d')
 
@@ -332,6 +332,7 @@ class Board:
     def render(self, screen):
         screen.fill('black')
         self.sprites.empty()
+        self.sprites.add(StandartSprite(load_image(config.background_sprite), (0, 0), 0))
         for i in range(self.height):
             for j in range(self.width):
                 for creature in self.board[i][j]:
@@ -371,7 +372,7 @@ class Board:
             return True
         return False
 
-    def generate_field(self, box_count=10, boom_count=10, enemy_count=10):
+    def generate_field(self, box_count=10, boom_count=10, enemy_count=2):
         self.board = [[[] for _ in range(self.width)] for _ in range(self.height)]
         for i in range(self.height):
             for j in range(self.width):
@@ -429,7 +430,7 @@ class Board:
 
 
 def main():
-    board = Board(n1, n2, cell_size=cs, left_shift=20, top_shift=20)
+    board = Board(n1, n2, cell_size=cs, left_shift=65, top_shift=75)
     board.start_game()
     board.generate_field()
     fps = 30  # количество кадров в секунду
