@@ -81,6 +81,7 @@ class Enemy(Creature):
                f' Triggered vector - {self.triggered_vector},' \
                f' angle - {self.angle}, x - {self.x}, y - {self.y}, Lose - {self.Lose}'
 
+
 class Player(Creature):
     image = load_image(config.player_sprite, -1)
 
@@ -144,6 +145,7 @@ class ShootSprite(CellObject):
 class EnemyShootSprite(ShootSprite):
     image = load_image(config.enemy_lazer_sprite)
 
+
 class Pepl(CellObject):
     image = load_image(config.pepl_sprite)
 
@@ -152,9 +154,9 @@ class Pepl(CellObject):
         self.timer = timer
         self.angle = angle
 
+
 class EnemyPepl(Pepl):
     image = load_image(config.enemy_pepl_sprite)
-
 
 
 class Pepl_Boom(Pepl):
@@ -205,7 +207,7 @@ class Board:
                 enemy.Lose = False
                 enemy.triggered = True
                 enemy.triggered_vector = [0, 1] if x_dif == 0 and y_dif > 0 else [0, -1] \
-                if x_dif == 0 and y_dif < 0 else [1, 0] if y_dif == 0 and x_dif > 0 else [-1, 0]
+                    if x_dif == 0 and y_dif < 0 else [1, 0] if y_dif == 0 and x_dif > 0 else [-1, 0]
                 enemy.angle = angles[tuple(enemy.triggered_vector)]
             if abs(x_dif) <= 1 and enemy.triggered == False and enemy.Lose == False:
                 enemy.triggered_vector = [0, y_dif // abs(y_dif)]
@@ -240,8 +242,9 @@ class Board:
                     self.board[y][x].append(EnemyShootSprite((y, x), enemy.angle, SHOOT_LENGTH))
                 continue
             if len([x for x in self.board[y + y_dif // abs(y_dif)][x]
-                    if not (isinstance(x, (Pepl, ShootSprite, EnemyPepl, EnemyShootSprite)))]) > 1\
-                    and len([x for x in self.board[y][x + x_dif // abs(x_dif)] if not (isinstance(x, (Pepl, ShootSprite, EnemyPepl, EnemyShootSprite)))]) > 1:
+                    if not (isinstance(x, (Pepl, ShootSprite, EnemyPepl, EnemyShootSprite)))]) > 1 \
+                    and len([x for x in self.board[y][x + x_dif // abs(x_dif)] if not
+            (isinstance(x, (Pepl, ShootSprite, EnemyPepl, EnemyShootSprite)))]) > 1:
                 # пасть рвет препятствию
                 for i in self.board[y + y_dif // abs(y_dif)][x]:
                     if isinstance(i, SimpleField):
@@ -255,7 +258,7 @@ class Board:
                     self.board[y + y_dif // abs(y_dif)][x].remove(i)
                 self.board[y + y_dif // abs(y_dif)][x].append(EnemyPepl((x, y + y_dif // abs(y_dif)), enemy.angle, 10))
                 continue
-            if abs(x_dif) > abs(y_dif):
+            if randint(0, 1) == 1:
                 if self.enemy_move(enemy, [x_dif // abs(x_dif), 0]):
                     continue
             if self.enemy_move(enemy, [0, y_dif // abs(y_dif)]):
@@ -348,8 +351,8 @@ class Board:
         self.sprites.draw(screen)
 
     def render_full_screen(self, screen, path):
-        #screen.fill('black')
-        #self.sprites.empty()
+        # screen.fill('black')
+        # self.sprites.empty()
         image = pygame.transform.scale(load_image(path), (screen.get_width(), screen.get_height()))
         image.set_alpha(170)
         self.sprites.add(StandartSprite(image, (0, 0), 0))
@@ -374,7 +377,7 @@ class Board:
             return True
         return False
 
-    def generate_field(self, box_count=10, boom_count=10, enemy_count=10):
+    def generate_field(self, box_count=10, boom_count=10, enemy_count=1):
         self.board = [[[] for _ in range(self.width)] for _ in range(self.height)]
         for i in range(self.height):
             for j in range(self.width):
@@ -439,6 +442,7 @@ def main():
     clock = pygame.time.Clock()
     running = True
     step = False
+    heating = 4
     game_over = False
     board.render(screen)
     player_vector = [0, -1]
@@ -470,15 +474,19 @@ def main():
                         elif event.key == config.move_button:
                             board.move_player(player_vector)
                             step = True
+                            heating = 4
                         elif event.key == config.shot_button:
                             board.player_shoot(player_vector)
                             step = True
+                            heating -= 1
+                            if heating == 0:
+                                board.game_run = False
+                                heating = 4
                     except BorderError:
                         pass
                     except WallStepError:
                         pass
                 changed = True
-
         # если сделали ход то идут враги
         if step:
             board.enemy_step()
@@ -490,7 +498,7 @@ def main():
         if changed:
             if board.game_run:
                 board.render(screen)
-                #board.check_actions()
+                # board.check_actions()
             else:
                 if not game_over:
                     board.render(screen)
