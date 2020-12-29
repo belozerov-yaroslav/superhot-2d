@@ -239,7 +239,9 @@ class Board:
                     y += y_v
                     self.board[y][x].append(EnemyShootSprite((y, x), enemy.angle, SHOOT_LENGTH))
                 continue
-            if len(self.board[y + y_dif // abs(y_dif)][x]) > 1 and len(self.board[y][x + x_dif // abs(x_dif)]) > 1:
+            if len([x for x in self.board[y + y_dif // abs(y_dif)][x]
+                    if not (isinstance(x, (Pepl, ShootSprite, EnemyPepl, EnemyShootSprite)))]) > 1\
+                    and len([x for x in self.board[y][x + x_dif // abs(x_dif)] if not (isinstance(x, (Pepl, ShootSprite, EnemyPepl, EnemyShootSprite)))]) > 1:
                 # пасть рвет препятствию
                 for i in self.board[y + y_dif // abs(y_dif)][x]:
                     if isinstance(i, SimpleField):
@@ -372,7 +374,7 @@ class Board:
             return True
         return False
 
-    def generate_field(self, box_count=10, boom_count=10, enemy_count=2):
+    def generate_field(self, box_count=10, boom_count=10, enemy_count=10):
         self.board = [[[] for _ in range(self.width)] for _ in range(self.height)]
         for i in range(self.height):
             for j in range(self.width):
