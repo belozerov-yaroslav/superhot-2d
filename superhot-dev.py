@@ -174,6 +174,7 @@ class Board:
         self.top_shift = top_shift
         self.sprites = pygame.sprite.Group()
         self.game_run = False
+        self.heating = 0
 
         self.board = [[[] for _ in range(self.width)] for _ in range(self.height)]
 
@@ -310,6 +311,7 @@ class Board:
                             self.board[i][j].remove(creature)
         if changed:
             self.render(screen)
+            self.render_heating(screen)
 
     def explosion(self, x, y):
         for i in range(-1, 2):
@@ -358,6 +360,12 @@ class Board:
         self.sprites.add(StandartSprite(image, (0, 0), 0))
         self.sprites.draw(screen)
 
+    def render_heating(self, screen):
+        image = load_image('heat_' + str(self.heating) + '.png')
+        self.sprites.add(StandartSprite(image, (800, 100), 0))
+        self.sprites.draw(screen)
+
+
     def get_cell(self, pos):
         x_index = (pos[0] - self.left_shift) // self.cell_size
         y_index = (pos[1] - self.top_shift) // self.cell_size
@@ -400,6 +408,7 @@ class Board:
 
     def start_game(self):
         self.player_obj = Player(pos=(randint(0, len(self.board[0]) - 1), randint(0, len(self.board) - 1)))
+        self.heating = 0
         self.game_run = True
 
     def check_actions(self):
@@ -431,6 +440,7 @@ class Board:
         self.generate_field()
         self.start_game()
         self.render(screen)
+        self.render_heating(screen)
         self.game_run = True
 
 
@@ -442,9 +452,9 @@ def main():
     clock = pygame.time.Clock()
     running = True
     step = False
-    heating = 4
     game_over = False
     board.render(screen)
+    board.render_heating(screen)
     player_vector = [0, -1]
     changed = False
     while running:
@@ -474,14 +484,13 @@ def main():
                         elif event.key == config.move_button:
                             board.move_player(player_vector)
                             step = True
-                            heating = 4
+                            board.heating = 0
                         elif event.key == config.shot_button:
                             board.player_shoot(player_vector)
                             step = True
-                            heating -= 1
-                            if heating == 0:
+                            board.heating += 1
+                            if board.heating == 3:
                                 board.game_run = False
-                                heating = 4
                     except BorderError:
                         pass
                     except WallStepError:
@@ -496,12 +505,10 @@ def main():
         if board.game_run:
             board.shoot_render(screen)
         if changed:
-            if board.game_run:
-                board.render(screen)
-                # board.check_actions()
-            else:
+            board.render(screen)
+            board.render_heating(screen)
+            if not board.game_run:
                 if not game_over:
-                    board.render(screen)
                     if board.check_enemy_lives():
                         board.render_full_screen(screen, config.game_over_sprite)
                     else:
