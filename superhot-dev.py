@@ -376,16 +376,18 @@ class Board:
 
     def add_object_to_cell(self, obj, pos=None):
         # метод для генерации поля, проверяет пустая ли клетка позиции
-        # есил да, то добавляет объект и возвращает True, иначе - возвращает False
+        # если да, то добавляет объект и возвращает True, иначе - возвращает False
         # если pos не передали генерирует сама
         if pos is None:
             pos = randint(0, self.height - 1), randint(0, self.width - 1)
+        if pos == self.player_obj.get_pos():
+            return False
         if len(self.board[pos[1]][pos[0]]) == 1:
             self.board[pos[1]][pos[0]].append(obj)
             return True
         return False
 
-    def generate_field(self, box_count=10, boom_count=10, enemy_count=1):
+    def generate_field(self, box_count=30, boom_count=7, enemy_count=7):
         self.board = [[[] for _ in range(self.width)] for _ in range(self.height)]
         for i in range(self.height):
             for j in range(self.width):
@@ -437,8 +439,8 @@ class Board:
 
     def new_game(self, screen):
         self.enemies = []
-        self.generate_field()
         self.start_game()
+        self.generate_field()
         self.render(screen)
         self.render_heating(screen)
         self.game_run = True
@@ -464,7 +466,8 @@ def main():
                 continue
             if config.debug_mode:
                 if event.type == pygame.MOUSEBUTTONDOWN:
-                    print(board.board[board.get_cell(event.pos)[1]][board.get_cell(event.pos)[0]])
+                    if not board.get_cell(event.pos) is None:
+                        print(board.board[board.get_cell(event.pos)[1]][board.get_cell(event.pos)[0]])
             if event.type == pygame.KEYDOWN:
                 if board.game_run:
                     # блок перемещения игрока
