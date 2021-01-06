@@ -452,6 +452,7 @@ def main():
     board.generate_field()
     fps = 30  # количество кадров в секунду
     clock = pygame.time.Clock()
+    freeze = 0
     running = True
     step = False
     game_over = False
@@ -472,35 +473,38 @@ def main():
                 if board.game_run:
                     # блок перемещения игрока
                     try:
-                        if event.key == config.move_up:
-                            player_vector = [0, -1]
-                            board.player_obj.angle = 0
-                        elif event.key == config.move_down:
-                            player_vector = [0, 1]
-                            board.player_obj.angle = 180
-                        elif event.key == config.move_left:
-                            player_vector = [-1, 0]
-                            board.player_obj.angle = 90
-                        elif event.key == config.move_right:
-                            player_vector = [1, 0]
-                            board.player_obj.angle = 270
-                        elif event.key == config.move_button:
-                            board.move_player(player_vector)
-                            step = True
-                            board.heating = 0
-                        elif event.key == config.shot_button:
-                            board.player_shoot(player_vector)
-                            step = True
-                            board.heating += 1
-                            if board.heating == 3:
-                                board.game_run = False
+                        if not freeze:
+                            if event.key == config.move_up:
+                                player_vector = [0, -1]
+                                board.player_obj.angle = 0
+                            elif event.key == config.move_down:
+                                player_vector = [0, 1]
+                                board.player_obj.angle = 180
+                            elif event.key == config.move_left:
+                                player_vector = [-1, 0]
+                                board.player_obj.angle = 90
+                            elif event.key == config.move_right:
+                                player_vector = [1, 0]
+                                board.player_obj.angle = 270
+                            elif event.key == config.move_button:
+                                board.move_player(player_vector)
+                                step = True
+                                board.heating = 0
+                                freeze = 20
+                            elif event.key == config.shot_button:
+                                board.player_shoot(player_vector)
+                                step = True
+                                board.heating += 1
+                                freeze = 20
+                                if board.heating == 3:
+                                    board.game_run = False
                     except BorderError:
                         pass
                     except WallStepError:
                         pass
                 changed = True
         # если сделали ход то идут враги
-        if step:
+        if step and freeze == 10:
             board.enemy_step()
             step = False
         board.check_enemy_lives()
@@ -523,6 +527,8 @@ def main():
                     game_over = False
             changed = False
             board.check_enemy_lives()
+        if freeze:
+            freeze -= 1
         # уменьшение таймера
         pygame.display.flip()
         clock.tick(fps)
