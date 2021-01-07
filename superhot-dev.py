@@ -160,7 +160,7 @@ class ShootSprite(CellObject):
     def decrease_timer(self):
         self.timer -= 1
         if self.__class__.__name__ == 'ShootSprite':
-            print(self.frames)
+            print(self.timer % len(self.frames))
         self.image = self.frames[self.timer % len(self.frames)]
 
 
@@ -331,9 +331,8 @@ class Board:
                         else:
                             changed = True
                             self.board[i][j].remove(creature)
-        if changed:
-            self.render(screen)
-            self.render_heating(screen)
+        self.render(screen)
+        self.render_heating(screen)
 
     def explosion(self, x, y):
         for i in range(-1, 2):
