@@ -506,6 +506,7 @@ def main():
         # если сделали ход то идут враги
         if step and freeze == 10:
             board.enemy_step()
+            changed = True
             step = False
         board.check_enemy_lives()
         # если изменилась картинка то рендерим
