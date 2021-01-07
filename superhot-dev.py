@@ -371,9 +371,9 @@ class Board:
         self.sprites.update()
         self.sprites.draw(screen)
 
-    def render_full_screen(self, screen, path):
+    def render_full_screen(self, screen, path, alpha=250):
         image = pygame.transform.scale(load_image(path), (screen.get_width(), screen.get_height()))
-        image.set_alpha(170)
+        image.set_alpha(alpha)
         self.sprites.add(StandartSprite(image, (0, 0), 0))
         self.sprites.draw(screen)
 
@@ -464,13 +464,24 @@ class Board:
 
 
 def main():
+    running = True
+    fps = 30  # количество кадров в секунду
+    clock = pygame.time.Clock()
+    screen.blit(pygame.transform.scale(load_image(config.start_screen),
+                                       (screen.get_width(), screen.get_height())), (0, 0))
+    pygame.display.flip()
+    start_screen = True
+    while start_screen:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
+            if event.type == pygame.KEYDOWN:
+                start_screen = False
     board = Board(n1, n2, cell_size=cs, left_shift=65, top_shift=75)
     board.start_game()
     board.generate_field()
-    fps = 30  # количество кадров в секунду
-    clock = pygame.time.Clock()
     freeze = 0
-    running = True
     step = False
     game_over = False
     board.render(screen)
@@ -515,42 +526,11 @@ def main():
                                 freeze = 20
                                 if board.heating == 3:
                                     board.game_run = False
-                        else:
-                            print('FREEZE')
                     except BorderError:
                         pass
                     except WallStepError:
                         pass
                 pressed = True
-        # # если сделали ход то идут враги
-        # if step and freeze == 9:
-        #     board.enemy_step()
-        #     changed = True
-        #     step = False
-        # board.check_enemy_lives()
-        # # если изменилась картинка то рендерим
-        # if board.game_run:
-        #     board.shoot_render(screen)
-        # if changed:
-        #     board.render(screen)
-        #     board.render_heating(screen)
-        #     if not board.game_run:
-        #         if not game_over:
-        #             if board.check_enemy_lives():
-        #                 board.render_full_screen(screen, config.game_over_sprite)
-        #             else:
-        #                 board.render_full_screen(screen, config.game_win_screen)
-        #             game_over = True
-        #         else:
-        #             print('Game Over!')
-        #             if pressed:
-        #                 print(1)
-        #                 player_vector = [0, -1]
-        #                 board.new_game(screen)
-        #                 game_over = False
-        #     changed = False
-        #     board.check_enemy_lives()
-        # уменьшение таймера
         if board.game_run:
             board.shoot_render(screen)
             board.render(screen)
@@ -561,9 +541,9 @@ def main():
                 board.render(screen)
                 board.render_heating(screen)
                 if board.check_enemy_lives():
-                    board.render_full_screen(screen, config.game_over_sprite)
+                    board.render_full_screen(screen, config.game_over_sprite, alpha=170)
                 else:
-                    board.render_full_screen(screen, config.game_win_screen)
+                    board.render_full_screen(screen, config.game_win_screen, alpha=170)
             else:
                 if pressed:
                     player_vector = [0, -1]

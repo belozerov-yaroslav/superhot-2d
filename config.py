@@ -22,6 +22,7 @@ game_over_sprite = 'game_over.png'
 game_win_screen = 'game_win.png'
 enemy_lazer_sprite = 'tile_with_red_laser_enemy.png'
 enemy_pepl_sprite = 'pepl_enemy.png'
+start_screen = 'start_screen.png'
 debug_mode = 1
 
 cell_size = 48  # в пикселях
