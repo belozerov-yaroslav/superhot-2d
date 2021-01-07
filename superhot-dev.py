@@ -132,35 +132,56 @@ class StandartSprite(pygame.sprite.Sprite):
         self.rect.x = pos[0]
         self.rect.y = pos[1]
 
+class AnimatedSprite(pygame.sprite.Sprite):
+    def __init__(self, sheet, columns, rows):
+        super().__init__(all_sprites)
+        self.frames = []
+        self.cut_sheet(sheet, columns, rows)
+
+    def cut_sheet(self, sheet, columns, rows):
+        self.rect = pygame.Rect(0, 0, sheet.get_width() // columns,
+                                sheet.get_height() // rows)
+        for j in range(rows):
+            for i in range(columns):
+                frame_location = (self.rect.w * i, self.rect.h * j)
+                self.frames.append(sheet.subsurface(pygame.Rect(
+                    frame_location, self.rect.size)))
+
 
 class ShootSprite(CellObject):
-    image = load_image(config.lazer_sprite)
+    frames = AnimatedSprite(load_image(config.lazer_sprite), 5, 2).frames
+    image = frames[0]
 
     def __init__(self, pos, angle=0, timer=0):
         super().__init__(pos)
         self.timer = timer
         self.angle = angle
 
+    def decrease_timer(self):
+        self.timer -= 1
+        if self.__class__.__name__ == 'ShootSprite':
+            print(self.frames)
+        self.image = self.frames[self.timer % len(self.frames)]
+
 
 class EnemyShootSprite(ShootSprite):
-    image = load_image(config.enemy_lazer_sprite)
+    frames = AnimatedSprite(load_image(config.enemy_lazer_sprite), 1, 1).frames
+    image = frames[0]
 
 
-class Pepl(CellObject):
-    image = load_image(config.pepl_sprite)
-
-    def __init__(self, pos, angle=0, timer=10):
-        super().__init__(pos)
-        self.timer = timer
-        self.angle = angle
+class Pepl(ShootSprite):
+    frames = AnimatedSprite(load_image(config.pepl_sprite), 1, 1).frames
+    image = frames[0]
 
 
-class EnemyPepl(Pepl):
-    image = load_image(config.enemy_pepl_sprite)
+class EnemyPepl(ShootSprite):
+    frames = AnimatedSprite(load_image(config.enemy_pepl_sprite), 1, 1).frames
+    image = frames[0]
 
 
-class Pepl_Boom(Pepl):
-    image = load_image(config.pepl_boom_sprite)
+class Pepl_Boom(ShootSprite):
+    frames = AnimatedSprite(load_image(config.pepl_boom_sprite), 1, 1).frames
+    image = frames[0]
 
 
 class Board:
@@ -228,7 +249,7 @@ class Board:
                         break
                     if self.player_obj.get_pos() == (x + x_v, y + y_v):
                         self.game_run = False
-                        self.board[y + y_v][x + x_v].append(EnemyPepl((y + y_v, x + x_v), enemy.angle))
+                        self.board[y + y_v][x + x_v].append(EnemyPepl((y + y_v, x + x_v), enemy.angle, 10))
                         break
                     if len(self.board[y + y_v][
                                x + x_v]) != 1:  # в боарде хранятся списки обектов, и если ничего нет, то там
@@ -273,7 +294,7 @@ class Board:
                     self.enemies.remove(elem[2])
             if elem[2] in self.board[elem[0]][elem[1]]:
                 self.board[elem[0]][elem[1]].remove(elem[2])
-                self.board[elem[0]][elem[1]].append(EnemyPepl((elem[0], elem[1]), elem[3]))
+                self.board[elem[0]][elem[1]].append(EnemyPepl((elem[0], elem[1]), elem[3], 10))
 
     # Функция, отслеживающая время отрисовки лазеров
     def player_shoot(self, vector):
@@ -303,9 +324,10 @@ class Board:
         for i in range(self.height):
             for j in range(self.width):
                 for creature in self.board[i][j]:
-                    if isinstance(creature, (ShootSprite, Pepl, EnemyShootSprite, EnemyPepl)):
+                    if isinstance(creature, (ShootSprite, Pepl, EnemyShootSprite, EnemyPepl, Pepl_Boom)):
                         if creature.timer > 0:
-                            creature.timer -= 1
+                            creature.decrease_timer()
+                            # print(creature.__class__.__name__)
                         else:
                             changed = True
                             self.board[i][j].remove(creature)
@@ -331,7 +353,7 @@ class Board:
                         if z in self.enemies:
                             self.enemies.remove(z)
                     self.board[y + j][x + i].remove(z)
-                self.board[y + j][x + i].append(Pepl_Boom((x + i, y + j)))
+                self.board[y + j][x + i].append(Pepl_Boom((x + i, y + j), 0, 10))
                 if self.player_obj.get_pos() == (x + i, y + j):
                     self.player_obj.alive = False
                     self.game_run = False
