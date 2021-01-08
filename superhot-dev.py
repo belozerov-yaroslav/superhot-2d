@@ -170,7 +170,7 @@ class EnemyShootSprite(ShootSprite):
 
 
 class Pepl(ShootSprite):
-    frames = AnimatedSprite(load_image(config.pepl_sprite), 1, 1).frames
+    frames = AnimatedSprite(load_image(config.pepl_sprite), 5, 2).frames
     image = frames[0]
 
 
