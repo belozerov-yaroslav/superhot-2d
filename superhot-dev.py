@@ -165,7 +165,7 @@ class ShootSprite(CellObject):
 
 
 class EnemyShootSprite(ShootSprite):
-    frames = AnimatedSprite(load_image(config.enemy_lazer_sprite), 1, 1).frames
+    frames = AnimatedSprite(load_image(config.enemy_lazer_sprite), 5, 2).frames
     image = frames[0]
 
 
