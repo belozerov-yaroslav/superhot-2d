@@ -482,6 +482,7 @@ def main():
     board.start_game()
     board.generate_field()
     freeze = 0
+    game_over_freeze = 5
     step = False
     game_over = False
     board.render(screen)
@@ -531,11 +532,13 @@ def main():
                     except WallStepError:
                         pass
                 pressed = True
-        if board.game_run:
+        print(game_over_freeze)
+        if board.game_run or game_over_freeze > 0:
             board.shoot_render(screen)
             board.render(screen)
             board.render_heating(screen)
         else:
+            print(game_over)
             if not game_over:
                 board.shoot_render(screen)
                 board.render(screen)
@@ -544,13 +547,18 @@ def main():
                     board.render_full_screen(screen, config.game_over_sprite, alpha=170)
                 else:
                     board.render_full_screen(screen, config.game_win_screen, alpha=170)
+                game_over = True
             else:
                 if pressed:
                     player_vector = [0, -1]
                     board.new_game(screen)
+                    game_over = False
+                    game_over_freeze = 5
         if freeze:
             freeze -= 1
-        game_over = not board.game_run
+        # game_over = not board.game_run
+        if not board.game_run:
+            game_over_freeze -= 1
         if step and freeze == 9:
             board.enemy_step()
             step = False
