@@ -378,8 +378,8 @@ class Board:
         self.sprites.draw(screen)
 
     def render_heating(self, screen):
-        image = load_image('heat_' + str(self.heating) + '.png')
-        self.sprites.add(StandartSprite(image, (800, 100), 0))
+        image = load_image('heat' + str(self.heating) + '.png')
+        self.sprites.add(StandartSprite(image, (810, 280), 0))
         self.sprites.draw(screen)
 
 

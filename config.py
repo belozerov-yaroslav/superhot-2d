@@ -1,6 +1,6 @@
 import pygame
 
-background_sprite = 'krinj2.png'
+background_sprite = 'krinj3.png'
 
 move_up = pygame.K_UP
 move_down = pygame.K_DOWN
