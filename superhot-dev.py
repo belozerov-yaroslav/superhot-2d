@@ -159,8 +159,6 @@ class ShootSprite(CellObject):
 
     def decrease_timer(self):
         self.timer -= 1
-        if self.__class__.__name__ == 'ShootSprite':
-            print(self.timer % len(self.frames))
         self.image = self.frames[self.timer % len(self.frames)]
 
 
@@ -484,10 +482,19 @@ def main():
     freeze = 0
     game_over_freeze = 5
     step = False
+    game_music = pygame.mixer.Sound(config.game_music)
+    start_sound = pygame.mixer.Sound(config.start_sound)
+    death_sound = pygame.mixer.Sound(config.death_sound)
+    win_sound = pygame.mixer.Sound(config.win_sound)
     game_over = False
     board.render(screen)
     board.render_heating(screen)
     player_vector = [0, -1]
+    game_music.play(-1)
+    death_sound.set_volume(config.game_volume)
+    start_sound.set_volume(config.game_volume)
+    game_music.set_volume(config.game_volume)
+    win_sound.set_volume(config.game_volume)
     while running:
         pressed = False
         for event in pygame.event.get():
@@ -532,24 +539,27 @@ def main():
                     except WallStepError:
                         pass
                 pressed = True
-        print(game_over_freeze)
         if board.game_run or game_over_freeze > 0:
             board.shoot_render(screen)
             board.render(screen)
             board.render_heating(screen)
         else:
-            print(game_over)
             if not game_over:
+                game_music.stop()
                 board.shoot_render(screen)
                 board.render(screen)
                 board.render_heating(screen)
                 if board.check_enemy_lives():
                     board.render_full_screen(screen, config.game_over_sprite, alpha=170)
+                    death_sound.play(0, 0)
                 else:
                     board.render_full_screen(screen, config.game_win_screen, alpha=170)
+                    win_sound.play()
                 game_over = True
             else:
                 if pressed:
+                    game_music.play(-1, 0)
+                    start_sound.play(0, 0)
                     player_vector = [0, -1]
                     board.new_game(screen)
                     game_over = False

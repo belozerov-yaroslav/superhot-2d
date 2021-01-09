@@ -23,6 +23,11 @@ game_win_screen = 'game_win.png'
 enemy_lazer_sprite = 'tile_with_red_laser_enemy_animated.png'
 enemy_pepl_sprite = 'pepl_enemy_a.png'
 start_screen = 'start_screen.png'
+game_music = 'music/sound_track.mp3'
+game_volume = 0.5
+start_sound = 'music/start_sound.mp3'
+death_sound = 'music/death_sound.mp3'
+win_sound = 'music/win_sound.mp3'
 debug_mode = 1
 
 cell_size = 48  # в пикселях
