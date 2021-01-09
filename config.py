@@ -17,11 +17,11 @@ field_sprite = 'cell1_tile.png'
 lazer_sprite = 'new_lazers2.png'
 pepl_sprite = 'animation_pepl.png'
 boom_sprite = 'cell1_tile_with_boom.png'
-pepl_boom_sprite = 'pepel_boom.png'
+pepl_boom_sprite = 'pepel_boom_a.png'
 game_over_sprite = 'game_over.png'
 game_win_screen = 'game_win.png'
 enemy_lazer_sprite = 'tile_with_red_laser_enemy_animated.png'
-enemy_pepl_sprite = 'pepl_enemy.png'
+enemy_pepl_sprite = 'pepl_enemy_a.png'
 start_screen = 'start_screen.png'
 debug_mode = 1
 
