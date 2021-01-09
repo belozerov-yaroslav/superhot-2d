@@ -1,6 +1,6 @@
 import pygame
 
-background_sprite = 'krinj2.png'
+background_sprite = 'krinj3.png'
 
 move_up = pygame.K_UP
 move_down = pygame.K_DOWN
@@ -14,14 +14,15 @@ player_sprite = 'pers2.png'
 wall_sprite = 'cell1_with_box_tile.png'
 enemy_sprite = 'enemy.png'
 field_sprite = 'cell1_tile.png'
-lazer_sprite = 'cell1_tile_with_lazer.png'
-pepl_sprite = 'pepl.png'
+lazer_sprite = 'new_lazers2.png'
+pepl_sprite = 'animation_pepl.png'
 boom_sprite = 'cell1_tile_with_boom.png'
-pepl_boom_sprite = 'pepel_boom.png'
+pepl_boom_sprite = 'pepel_boom_a.png'
 game_over_sprite = 'game_over.png'
 game_win_screen = 'game_win.png'
-enemy_lazer_sprite = 'tile_with_red_laser_enemy.png'
-enemy_pepl_sprite = 'pepl_enemy.png'
+enemy_lazer_sprite = 'tile_with_red_laser_enemy_animated.png'
+enemy_pepl_sprite = 'pepl_enemy_a.png'
+start_screen = 'start_screen.png'
 debug_mode = 1
 
 cell_size = 48  # в пикселях

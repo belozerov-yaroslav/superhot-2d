@@ -132,35 +132,56 @@ class StandartSprite(pygame.sprite.Sprite):
         self.rect.x = pos[0]
         self.rect.y = pos[1]
 
+class AnimatedSprite(pygame.sprite.Sprite):
+    def __init__(self, sheet, columns, rows):
+        super().__init__(all_sprites)
+        self.frames = []
+        self.cut_sheet(sheet, columns, rows)
+
+    def cut_sheet(self, sheet, columns, rows):
+        self.rect = pygame.Rect(0, 0, sheet.get_width() // columns,
+                                sheet.get_height() // rows)
+        for j in range(rows):
+            for i in range(columns):
+                frame_location = (self.rect.w * i, self.rect.h * j)
+                self.frames.append(sheet.subsurface(pygame.Rect(
+                    frame_location, self.rect.size)))
+
 
 class ShootSprite(CellObject):
-    image = load_image(config.lazer_sprite)
+    frames = AnimatedSprite(load_image(config.lazer_sprite), 5, 2).frames
+    image = frames[0]
 
     def __init__(self, pos, angle=0, timer=0):
         super().__init__(pos)
         self.timer = timer
         self.angle = angle
 
+    def decrease_timer(self):
+        self.timer -= 1
+        if self.__class__.__name__ == 'ShootSprite':
+            print(self.timer % len(self.frames))
+        self.image = self.frames[self.timer % len(self.frames)]
+
 
 class EnemyShootSprite(ShootSprite):
-    image = load_image(config.enemy_lazer_sprite)
+    frames = AnimatedSprite(load_image(config.enemy_lazer_sprite), 5, 2).frames
+    image = frames[0]
 
 
-class Pepl(CellObject):
-    image = load_image(config.pepl_sprite)
-
-    def __init__(self, pos, angle=0, timer=10):
-        super().__init__(pos)
-        self.timer = timer
-        self.angle = angle
+class Pepl(ShootSprite):
+    frames = AnimatedSprite(load_image(config.pepl_sprite), 5, 2).frames
+    image = frames[0]
 
 
-class EnemyPepl(Pepl):
-    image = load_image(config.enemy_pepl_sprite)
+class EnemyPepl(ShootSprite):
+    frames = AnimatedSprite(load_image(config.enemy_pepl_sprite), 5, 2).frames
+    image = frames[0]
 
 
-class Pepl_Boom(Pepl):
-    image = load_image(config.pepl_boom_sprite)
+class Pepl_Boom(ShootSprite):
+    frames = AnimatedSprite(load_image(config.pepl_boom_sprite), 5, 2).frames
+    image = frames[0]
 
 
 class Board:
@@ -228,7 +249,7 @@ class Board:
                         break
                     if self.player_obj.get_pos() == (x + x_v, y + y_v):
                         self.game_run = False
-                        self.board[y + y_v][x + x_v].append(EnemyPepl((y + y_v, x + x_v), enemy.angle))
+                        self.board[y + y_v][x + x_v].append(EnemyPepl((y + y_v, x + x_v), enemy.angle, 10))
                         break
                     if len(self.board[y + y_v][
                                x + x_v]) != 1:  # в боарде хранятся списки обектов, и если ничего нет, то там
@@ -273,7 +294,7 @@ class Board:
                     self.enemies.remove(elem[2])
             if elem[2] in self.board[elem[0]][elem[1]]:
                 self.board[elem[0]][elem[1]].remove(elem[2])
-                self.board[elem[0]][elem[1]].append(EnemyPepl((elem[0], elem[1]), elem[3]))
+                self.board[elem[0]][elem[1]].append(EnemyPepl((elem[0], elem[1]), elem[3], 10))
 
     # Функция, отслеживающая время отрисовки лазеров
     def player_shoot(self, vector):
@@ -303,15 +324,13 @@ class Board:
         for i in range(self.height):
             for j in range(self.width):
                 for creature in self.board[i][j]:
-                    if isinstance(creature, (ShootSprite, Pepl, EnemyShootSprite, EnemyPepl)):
+                    if isinstance(creature, (ShootSprite, Pepl, EnemyShootSprite, EnemyPepl, Pepl_Boom)):
                         if creature.timer > 0:
-                            creature.timer -= 1
+                            creature.decrease_timer()
                         else:
-                            changed = True
                             self.board[i][j].remove(creature)
-        if changed:
-            self.render(screen)
-            self.render_heating(screen)
+        # self.render(screen)
+        # self.render_heating(screen)
 
     def explosion(self, x, y):
         for i in range(-1, 2):
@@ -331,7 +350,7 @@ class Board:
                         if z in self.enemies:
                             self.enemies.remove(z)
                     self.board[y + j][x + i].remove(z)
-                self.board[y + j][x + i].append(Pepl_Boom((x + i, y + j)))
+                self.board[y + j][x + i].append(Pepl_Boom((x + i, y + j), 0, 10))
                 if self.player_obj.get_pos() == (x + i, y + j):
                     self.player_obj.alive = False
                     self.game_run = False
@@ -352,17 +371,15 @@ class Board:
         self.sprites.update()
         self.sprites.draw(screen)
 
-    def render_full_screen(self, screen, path):
-        # screen.fill('black')
-        # self.sprites.empty()
+    def render_full_screen(self, screen, path, alpha=250):
         image = pygame.transform.scale(load_image(path), (screen.get_width(), screen.get_height()))
-        image.set_alpha(170)
+        image.set_alpha(alpha)
         self.sprites.add(StandartSprite(image, (0, 0), 0))
         self.sprites.draw(screen)
 
     def render_heating(self, screen):
-        image = load_image('heat_' + str(self.heating) + '.png')
-        self.sprites.add(StandartSprite(image, (800, 100), 0))
+        image = load_image('heat' + str(self.heating) + '.png')
+        self.sprites.add(StandartSprite(image, (810, 280), 0))
         self.sprites.draw(screen)
 
 
@@ -447,19 +464,32 @@ class Board:
 
 
 def main():
+    running = True
+    fps = 30  # количество кадров в секунду
+    clock = pygame.time.Clock()
+    screen.blit(pygame.transform.scale(load_image(config.start_screen),
+                                       (screen.get_width(), screen.get_height())), (0, 0))
+    pygame.display.flip()
+    start_screen = True
+    while start_screen:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
+            if event.type == pygame.KEYDOWN:
+                start_screen = False
     board = Board(n1, n2, cell_size=cs, left_shift=65, top_shift=75)
     board.start_game()
     board.generate_field()
-    fps = 30  # количество кадров в секунду
-    clock = pygame.time.Clock()
-    running = True
+    freeze = 0
+    game_over_freeze = 5
     step = False
     game_over = False
     board.render(screen)
     board.render_heating(screen)
     player_vector = [0, -1]
-    changed = False
     while running:
+        pressed = False
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
@@ -472,58 +502,67 @@ def main():
                 if board.game_run:
                     # блок перемещения игрока
                     try:
-                        if event.key == config.move_up:
-                            player_vector = [0, -1]
-                            board.player_obj.angle = 0
-                        elif event.key == config.move_down:
-                            player_vector = [0, 1]
-                            board.player_obj.angle = 180
-                        elif event.key == config.move_left:
-                            player_vector = [-1, 0]
-                            board.player_obj.angle = 90
-                        elif event.key == config.move_right:
-                            player_vector = [1, 0]
-                            board.player_obj.angle = 270
-                        elif event.key == config.move_button:
-                            board.move_player(player_vector)
-                            step = True
-                            board.heating = 0
-                        elif event.key == config.shot_button:
-                            board.player_shoot(player_vector)
-                            step = True
-                            board.heating += 1
-                            if board.heating == 3:
-                                board.game_run = False
+                        if not freeze:
+                            if event.key == config.move_up:
+                                player_vector = [0, -1]
+                                board.player_obj.angle = 0
+                            elif event.key == config.move_down:
+                                player_vector = [0, 1]
+                                board.player_obj.angle = 180
+                            elif event.key == config.move_left:
+                                player_vector = [-1, 0]
+                                board.player_obj.angle = 90
+                            elif event.key == config.move_right:
+                                player_vector = [1, 0]
+                                board.player_obj.angle = 270
+                            elif event.key == config.move_button:
+                                board.move_player(player_vector)
+                                step = True
+                                board.heating = 0
+                                freeze = 20
+                            elif event.key == config.shot_button:
+                                board.player_shoot(player_vector)
+                                step = True
+                                board.heating += 1
+                                freeze = 20
+                                if board.heating == 3:
+                                    board.game_run = False
                     except BorderError:
                         pass
                     except WallStepError:
                         pass
-                changed = True
-        # если сделали ход то идут враги
-        if step:
-            board.enemy_step()
-            step = False
-        board.check_enemy_lives()
-        # если изменилась картинка то рендерим
-        if board.game_run:
+                pressed = True
+        print(game_over_freeze)
+        if board.game_run or game_over_freeze > 0:
             board.shoot_render(screen)
-        if changed:
             board.render(screen)
             board.render_heating(screen)
-            if not board.game_run:
-                if not game_over:
-                    if board.check_enemy_lives():
-                        board.render_full_screen(screen, config.game_over_sprite)
-                    else:
-                        board.render_full_screen(screen, config.game_win_screen)
-                    game_over = True
+        else:
+            print(game_over)
+            if not game_over:
+                board.shoot_render(screen)
+                board.render(screen)
+                board.render_heating(screen)
+                if board.check_enemy_lives():
+                    board.render_full_screen(screen, config.game_over_sprite, alpha=170)
                 else:
+                    board.render_full_screen(screen, config.game_win_screen, alpha=170)
+                game_over = True
+            else:
+                if pressed:
                     player_vector = [0, -1]
                     board.new_game(screen)
                     game_over = False
-            changed = False
-            board.check_enemy_lives()
-        # уменьшение таймера
+                    game_over_freeze = 5
+        if freeze:
+            freeze -= 1
+        # game_over = not board.game_run
+        if not board.game_run:
+            game_over_freeze -= 1
+        if step and freeze == 9:
+            board.enemy_step()
+            step = False
+        board.check_enemy_lives()
         pygame.display.flip()
         clock.tick(fps)
 
