@@ -85,10 +85,11 @@ class Enemy(Creature):
 class Player(Creature):
     image = load_image(config.player_sprite, -1)
 
-    def __init__(self, pos=(0, 0), angle=0):
+    def __init__(self, pos=(0, 0), angle=0, score=0):
         super().__init__(angle)
         self.x, self.y = pos
         self.angle = angle
+        self.score = score
 
     def get_pos(self):
         return self.x, self.y
@@ -194,6 +195,9 @@ class Board:
         self.sprites = pygame.sprite.Group()
         self.game_run = False
         self.heating = 0
+        self.enemies_count = 0
+        self.past_enemies_count = 0
+        self.player_obj = Player()
 
         self.board = [[[] for _ in range(self.width)] for _ in range(self.height)]
 
@@ -317,8 +321,7 @@ class Board:
             y += y_v
             self.board[y][x].append(ShootSprite((y, x), self.player_obj.angle, SHOOT_LENGTH))
 
-    def shoot_render(self, screen):
-        changed = False
+    def shoot_render(self):
         for i in range(self.height):
             for j in range(self.width):
                 for creature in self.board[i][j]:
@@ -327,8 +330,6 @@ class Board:
                             creature.decrease_timer()
                         else:
                             self.board[i][j].remove(creature)
-        # self.render(screen)
-        # self.render_heating(screen)
 
     def explosion(self, x, y):
         for i in range(-1, 2):
@@ -380,6 +381,12 @@ class Board:
         self.sprites.add(StandartSprite(image, (810, 280), 0))
         self.sprites.draw(screen)
 
+    def render_player_score(self, screen):
+        score = self.player_obj.score
+        font = pygame.font.Font('score_font.ttf', 75)
+        text = font.render(str(score), True, (74, 130, 203))
+        screen.blit(text, (5, 310))
+
 
     def get_cell(self, pos):
         x_index = (pos[0] - self.left_shift) // self.cell_size
@@ -423,11 +430,6 @@ class Board:
                 result = self.add_object_to_cell(new_enemy, pos=(x, y))
             self.enemies.append(new_enemy)
 
-    def start_game(self):
-        self.player_obj = Player(pos=(randint(0, len(self.board[0]) - 1), randint(0, len(self.board) - 1)))
-        self.heating = 0
-        self.game_run = True
-
     def check_actions(self):
         x, y = self.player_obj.x, self.player_obj.y
         for obj in self.board[y][x]:
@@ -452,13 +454,28 @@ class Board:
         self.player_obj.set_pos(x + x_v, y + y_v)
         return True
 
-    def new_game(self, screen):
+    def new_game(self, screen, restart=True):
         self.enemies = []
-        self.start_game()
-        self.generate_field()
+
+        # self.player_obj = Player(pos=(randint(0, len(self.board[0]) - 1), randint(0, len(self.board) - 1)))
+        self.player_obj.set_pos(randint(0, len(self.board[0]) - 1), randint(0, len(self.board) - 1))
+        self.player_obj.angle = 0
+        if restart:
+            self.player_obj.score = 0
+        self.heating = 0
+        self.game_run = True
+
+        self.enemies_count = 7
+        self.past_enemies_count = 7
+        self.generate_field(enemy_count=self.enemies_count)
         self.render(screen)
         self.render_heating(screen)
         self.game_run = True
+
+    def update_player_score(self):
+        self.player_obj.score += self.past_enemies_count - self.check_enemy_lives()
+        self.past_enemies_count = self.check_enemy_lives()
+
 
 
 def main():
@@ -476,9 +493,17 @@ def main():
                 quit()
             if event.type == pygame.KEYDOWN:
                 start_screen = False
+
+    filters = pygame.sprite.Group()
+    image = pygame.transform.scale(load_image(config.glass), (screen.get_width(), screen.get_height()))
+    image.set_alpha(60)
+    filters.add(StandartSprite(image, (0, 0), 0))
+    image = pygame.transform.scale(load_image(config.pixels), (screen.get_width(), screen.get_height()))
+    image.set_alpha(30)
+    filters.add(StandartSprite(image, (0, 0), 0))
+
     board = Board(n1, n2, cell_size=cs, left_shift=65, top_shift=75)
-    board.start_game()
-    board.generate_field()
+    board.new_game(screen)
     freeze = 0
     game_over_freeze = 5
     step = False
@@ -540,15 +565,22 @@ def main():
                         pass
                 pressed = True
         if board.game_run or game_over_freeze > 0:
-            board.shoot_render(screen)
+            board.shoot_render()
             board.render(screen)
             board.render_heating(screen)
+            board.update_player_score()
+            # board.render_full_screen(screen, config.glass, alpha=60)
+            # board.render_full_screen(screen, config.pixels, alpha=30)
+            board.render_player_score(screen)
+            filters.draw(screen)
         else:
             if not game_over:
                 game_music.stop()
-                board.shoot_render(screen)
+                board.shoot_render()
                 board.render(screen)
                 board.render_heating(screen)
+                board.update_player_score()
+                board.render_player_score(screen)
                 if board.check_enemy_lives():
                     board.render_full_screen(screen, config.game_over_sprite, alpha=170)
                     death_sound.play(0, 0)
@@ -561,12 +593,12 @@ def main():
                     game_music.play(-1, 0)
                     start_sound.play(0, 0)
                     player_vector = [0, -1]
-                    board.new_game(screen)
+                    print(bool(board.check_enemy_lives()))
+                    board.new_game(screen, restart=bool(board.check_enemy_lives()))
                     game_over = False
                     game_over_freeze = 5
         if freeze:
             freeze -= 1
-        # game_over = not board.game_run
         if not board.game_run:
             game_over_freeze -= 1
         if step and freeze == 9:
