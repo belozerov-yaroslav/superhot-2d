@@ -331,7 +331,7 @@ class Board:
                 for i in self.board[y + y_v][x + x_v]:  # (всегда есть одна обычная клетка)
                     if isinstance(i, Wall) or isinstance(i, Enemy):  # если это стена или враг
                         self.board[y + y_v][x + x_v].remove(i)  # то лазер его уничтожает
-                        if isinstance(i, Enemy):  # и также убирает врага из списка их координат
+                        if isinstance(i, Enemy):  # и также убирает врага из списка врагов
                             if i in self.enemies:
                                 self.enemies.remove(i)
                         self.board[y + y_v][x + x_v].append(
