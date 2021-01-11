@@ -288,7 +288,7 @@ class Board:
                     and len([x for x in self.board[y][x + x_dif // abs(x_dif)] if not
             (isinstance(x, (Pepl, ShootSprite, EnemyPepl, EnemyShootSprite)))]) > 1:
                 # очистка клетки
-#                enemy.angle = angles[(0, y_dif // abs(y_dif))]
+                enemy.angle = angles[(0, y_dif // abs(y_dif))]
                 for i in self.board[y + y_dif // abs(y_dif)][x]:
                     if isinstance(i, SimpleField):
                         continue
