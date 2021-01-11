@@ -6,17 +6,20 @@ import os
 
 all_sprites = pygame.sprite.Group()
 
+# время до исчезновения спрайта стрельбы и пепла
 SHOOT_LENGTH = 10
 
 pygame.init()
-n1 = 15
-n2 = 15
-cs = 48
-size = 130 + n1 * cs, 130 + n2 * cs
+n1 = 15  # клеток по горизонтали
+n2 = 15  # клеток по вертикали
+cs = 48  # длинна одной стороны клетки
+size = 130 + n1 * cs, 130 + n2 * cs # размеры экрана
 screen = pygame.display.set_mode(size)
 pygame.display.set_caption('Superhot 2d')
 
 
+# опорная функция системы спрайтов, загружает изображение
+# если передать color_key -1, то удалит цвет вернего левого пикселя
 def load_image(name, color_key=None):
     fullname = os.path.join(config.sprite_folder_name, name)
     try:
@@ -45,6 +48,7 @@ class CellObject:
         return self.__class__.__name__
 
 
+# обычное поле
 class SimpleField(CellObject):
     image = load_image(config.field_sprite)
 
@@ -102,30 +106,26 @@ class Player(Creature):
 class Wall(Creature):
     image = load_image(config.wall_sprite)
 
-    def __init__(self):
-        super().__init__()
-
 
 class Boom(Creature):
     image = load_image(config.boom_sprite)
 
-    def __init__(self):
-        super().__init__()
-
 
 # ошибки
+# если попытка пойти в край карты
 class BorderError(Exception):
     pass
 
 
+# если наступаем на занятую клетку
 class WallStepError(Exception):
     pass
 
 
+# Спрайт для отрисовки графики, может повернуться на значение angle
 class StandartSprite(pygame.sprite.Sprite):
     def __init__(self, image, pos, angle):
         super().__init__()
-        size = image.get_size()
         self.image = image
         if angle != 0:
             self.image = pygame.transform.rotate(self.image, angle)
@@ -133,6 +133,8 @@ class StandartSprite(pygame.sprite.Sprite):
         self.rect.x = pos[0]
         self.rect.y = pos[1]
 
+
+# используеться для получения списка кадров
 class AnimatedSprite(pygame.sprite.Sprite):
     def __init__(self, sheet, columns, rows):
         super().__init__(all_sprites)
@@ -201,17 +203,19 @@ class Board:
 
         self.board = [[[] for _ in range(self.width)] for _ in range(self.height)]
 
+    # двигает врага в направлении вектора
     def enemy_move(self, enemy, vector):
         angles = {(0, 1): 180, (0, -1): 0, (1, 0): 270, (-1, 0): 90}
+        # соответсвие направления хода, повороту спрайта врага
         x_v, y_v = vector
         x, y = enemy.get_pos()
         if not (0 <= x + x_v < self.width and 0 <= y + y_v < self.height):
-            return False
+            return False  # выход за игровое поле
         for cell_obj in self.board[y + y_v][x + x_v]:
             if isinstance(cell_obj, Wall) or isinstance(cell_obj, Boom) or isinstance(cell_obj, Enemy):
-                return False
+                return False  # попытка идти в занятую клетку
         # если все нормально
-        if enemy in self.board[y][x]:
+        if enemy in self.board[y][x]:  # попытка перенести объект врага в игровом поле
             self.board[y][x].remove(enemy)
             self.board[y + y_v][x + x_v].append(enemy)
             enemy.x, enemy.y = x + x_v, y + y_v
@@ -220,41 +224,49 @@ class Board:
         else:
             return False
 
-    def enemy_step(self):  # ходят враги
-        destroed = set()
+    # ход врагов, обработка передвижения и стрельбы
+    def enemy_step(self):
+        destroed = set()  # список всех уничтоженных врагами объектов
+        # соответсвие направления выстрела, повороту спрайта врага
         angles = {(0, 1): 180, (0, -1): 0, (1, 0): 270, (-1, 0): 90}
         for enemy in self.enemies:
             x, y = enemy.get_pos()
             x_dif = self.player_obj.x - enemy.x
             y_dif = self.player_obj.y - enemy.y
+            # если враг на одной линии с игроком, то он безусловно стреляет
             if x_dif == 0 or y_dif == 0:
                 enemy.Lose = False
                 enemy.triggered = True
                 enemy.triggered_vector = [0, 1] if x_dif == 0 and y_dif > 0 else [0, -1] \
                     if x_dif == 0 and y_dif < 0 else [1, 0] if y_dif == 0 and x_dif > 0 else [-1, 0]
                 enemy.angle = angles[tuple(enemy.triggered_vector)]
+            # если разница с игроком в 1 клетку, враг пытается убить игрока, но только если он так уже не пытался
             if abs(x_dif) <= 1 and enemy.triggered == False and enemy.Lose == False:
                 enemy.triggered_vector = [0, y_dif // abs(y_dif)]
                 enemy.triggered = True
                 enemy.angle = angles[tuple(enemy.triggered_vector)]
+            # если разница с игроком в 1 клетку, враг пытается убить игрока, но только если он так уже не пытался
             if abs(y_dif) <= 1 and enemy.triggered == False and enemy.Lose == False:
                 enemy.triggered = True
                 enemy.triggered_vector = [x_dif // abs(x_dif), 0]
                 enemy.angle = angles[tuple(enemy.triggered_vector)]
+            # противник стреляет
             if not enemy.Lose and enemy.triggered:  # если он видит игрока и прошлый раз он не промазал
                 enemy.triggered = False
                 enemy.Lose = True
-                x_v, y_v = enemy.triggered_vector
+                x_v, y_v = enemy.triggered_vector  # задается направление стрельбы
                 x, y = enemy.get_pos()
                 while True:
                     if not (0 <= x + x_v < self.width and 0 <= y + y_v < self.height):
                         break
+                    # игрок не хранится в обычной сетке поля, поэтому отдельно проверяем его позицию
                     if self.player_obj.get_pos() == (x + x_v, y + y_v):
                         self.game_run = False
                         self.board[y + y_v][x + x_v].append(EnemyPepl((y + y_v, x + x_v), enemy.angle, 10))
                         break
-                    if len(self.board[y + y_v][
-                               x + x_v]) != 1:  # в боарде хранятся списки обектов, и если ничего нет, то там
+                    if len(self.board[y + y_v][x + x_v]) != 1:
+                        # если в списке объектов клетки только один, то там только обычное поле,
+                        # если нет - проверяем столкновение
                         for i in self.board[y + y_v][x + x_v]:
                             if isinstance(i, Wall) or isinstance(i, Enemy):
                                 destroed.add((y + y_v, x + x_v, i, enemy.angle))
@@ -264,12 +276,13 @@ class Board:
                     x += x_v
                     y += y_v
                     self.board[y][x].append(EnemyShootSprite((y, x), enemy.angle, SHOOT_LENGTH))
-                continue
+                continue  # если враг выстрелил, то он уже не будет ходить
+            # проверка, может ли враг сократить дистацию с игроком, если не может, то уничтожает препятствие
             if len([x for x in self.board[y + y_dif // abs(y_dif)][x]
                     if not (isinstance(x, (Pepl, ShootSprite, EnemyPepl, EnemyShootSprite)))]) > 1 \
                     and len([x for x in self.board[y][x + x_dif // abs(x_dif)] if not
             (isinstance(x, (Pepl, ShootSprite, EnemyPepl, EnemyShootSprite)))]) > 1:
-                # пасть рвет препятствию
+                # очистка клетки
                 for i in self.board[y + y_dif // abs(y_dif)][x]:
                     if isinstance(i, SimpleField):
                         continue
@@ -282,6 +295,7 @@ class Board:
                     self.board[y + y_dif // abs(y_dif)][x].remove(i)
                 self.board[y + y_dif // abs(y_dif)][x].append(EnemyPepl((x, y + y_dif // abs(y_dif)), enemy.angle, 10))
                 continue
+            # сокращает дистанцию
             if randint(0, 1) == 1:
                 if self.enemy_move(enemy, [x_dif // abs(x_dif), 0]):
                     continue
@@ -289,7 +303,9 @@ class Board:
                 continue
             else:
                 self.enemy_move(enemy, [x_dif // abs(x_dif), 0])
+            # если враг сходил, то может выстрелить
             enemy.Lose = False
+        # идем по списку уничтоженных объектов, вставляем в нужные места след лазера
         for elem in destroed:
             if isinstance(elem[2], Enemy):
                 if elem[2] in self.enemies:
@@ -391,7 +407,6 @@ class Board:
             text = font.render(str(score), True, (74, 130, 203))
         screen.blit(text, (10, 310))
 
-
     def get_cell(self, pos):
         x_index = (pos[0] - self.left_shift) // self.cell_size
         y_index = (pos[1] - self.top_shift) // self.cell_size
@@ -479,7 +494,6 @@ class Board:
     def update_player_score(self):
         self.player_obj.score += self.past_enemies_count - self.check_enemy_lives()
         self.past_enemies_count = self.check_enemy_lives()
-
 
 
 def main():
