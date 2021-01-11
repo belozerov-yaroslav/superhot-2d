@@ -4,6 +4,11 @@ import time
 import config
 import os
 
+# ▄▀▀ █░█ █▀▄ █▀▀ █▀▀▄     █░░ ▄▀▄ ▀█▀     ▒▄▀▄     █▀▄
+# ░▀▄ █░█ █░█ █▀▀ █▐█▀     █▀▄ █░█ ░█░     ░▒▄▀     █░█
+# ▀▀░ ░▀░ █▀░ ▀▀▀ ▀░▀▀     ▀░▀ ░▀░ ░▀░     ▒█▄▄     ▀▀░
+
+
 all_sprites = pygame.sprite.Group()
 
 # время до исчезновения спрайта стрельбы и пепла
@@ -13,7 +18,7 @@ pygame.init()
 n1 = 15  # клеток по горизонтали
 n2 = 15  # клеток по вертикали
 cs = 48  # длинна одной стороны клетки
-size = 130 + n1 * cs, 130 + n2 * cs # размеры экрана
+size = 130 + n1 * cs, 130 + n2 * cs  # размеры экрана
 screen = pygame.display.set_mode(size)
 pygame.display.set_caption('Superhot 2d')
 
@@ -283,6 +288,7 @@ class Board:
                     and len([x for x in self.board[y][x + x_dif // abs(x_dif)] if not
             (isinstance(x, (Pepl, ShootSprite, EnemyPepl, EnemyShootSprite)))]) > 1:
                 # очистка клетки
+#                enemy.angle = angles[(0, y_dif // abs(y_dif))]
                 for i in self.board[y + y_dif // abs(y_dif)][x]:
                     if isinstance(i, SimpleField):
                         continue
@@ -315,104 +321,104 @@ class Board:
                 self.board[elem[0]][elem[1]].append(EnemyPepl((elem[0], elem[1]), elem[3], 10))
 
     # Функция, отслеживающая время отрисовки лазеров
-    def player_shoot(self, vector): # функция стрельбы игрока
+    def player_shoot(self, vector):  # функция стрельбы игрока
         x_v, y_v = vector
-        x, y = self.player_obj.get_pos() # получает информацию о игроке
-        while True: # идет в сторону направления игрока
+        x, y = self.player_obj.get_pos()  # получает информацию о игроке
+        while True:  # идет в сторону направления игрока
             if not (0 <= x + x_v < self.width and 0 <= y + y_v < self.height):
-                break # если лазер дошёл до края ничего не уничтожив, функция выключается
+                break  # если лазер дошёл до края ничего не уничтожив, функция выключается
             if len(self.board[y + y_v][x + x_v]) != 1:  # если в настоящей клетке больше одного объекта
-                for i in self.board[y + y_v][x + x_v]: # (всегда есть одна обычная клетка)
-                    if isinstance(i, Wall) or isinstance(i, Enemy): # если это стена или враг
-                        self.board[y + y_v][x + x_v].remove(i) # то лазер его уничтожает
-                        if isinstance(i, Enemy): # и также убирает врага из списка их координат
+                for i in self.board[y + y_v][x + x_v]:  # (всегда есть одна обычная клетка)
+                    if isinstance(i, Wall) or isinstance(i, Enemy):  # если это стена или враг
+                        self.board[y + y_v][x + x_v].remove(i)  # то лазер его уничтожает
+                        if isinstance(i, Enemy):  # и также убирает врага из списка их координат
                             if i in self.enemies:
                                 self.enemies.remove(i)
                         self.board[y + y_v][x + x_v].append(
-                            Pepl((x + x_v, y + y_v), self.player_obj.angle, 10)) # и добавляет эффект взрыва
+                            Pepl((x + x_v, y + y_v), self.player_obj.angle, 10))  # и добавляет эффект взрыва
                     elif isinstance(i, Boom):
-                        self.explosion(x + x_v, y + y_v) # если же это бочка, то взрывает
-                break # и т.к лазер попал, то функция выключается
-            x += x_v # если не попал, то идёт дальше
+                        self.explosion(x + x_v, y + y_v)  # если же это бочка, то взрывает
+                break  # и т.к лазер попал, то функция выключается
+            x += x_v  # если не попал, то идёт дальше
             y += y_v
             self.board[y][x].append(ShootSprite((y, x), self.player_obj.angle, SHOOT_LENGTH))
             # и добавляет эффект лазера
 
-    def shoot_render(self): # функция уничтожения лазеров и взрывов, вреям анимации которых кончилось
+    def shoot_render(self):  # функция уничтожения лазеров и взрывов, вреям анимации которых кончилось
         for i in range(self.height):
             for j in range(self.width):
-                for creature in self.board[i][j]: # проходит по всему board
+                for creature in self.board[i][j]:  # проходит по всему board
                     if isinstance(creature, (ShootSprite, Pepl, EnemyShootSprite, EnemyPepl, Pepl_Boom)):
-                        if creature.timer > 0: # если время еще осталось, то уменьшает его
+                        if creature.timer > 0:  # если время еще осталось, то уменьшает его
                             creature.decrease_timer()
-                        else: # иначе, уничтожает объект
+                        else:  # иначе, уничтожает объект
                             self.board[i][j].remove(creature)
 
-    def explosion(self, x, y): # функция взрыва бочки
+    def explosion(self, x, y):  # функция взрыва бочки
         for i in range(-1, 2):
-            for j in range(-1, 2): # проходит по области возле бочки
+            for j in range(-1, 2):  # проходит по области возле бочки
                 if x + i < 0 or x + i >= len(self.board):
-                    continue # проверка на край экрана
+                    continue  # проверка на край экрана
                 if y + j < 0 or y + j >= len(self.board):
-                    continue # проверка на край экрана
-                for z in self.board[y + j][x + i]: # проходит по клетке
+                    continue  # проверка на край экрана
+                for z in self.board[y + j][x + i]:  # проходит по клетке
                     if isinstance(z, SimpleField):
-                        continue # пропуск клеток поля
-                    elif isinstance(z, Boom): # цепочка взрывов, если задела вторую бочку
+                        continue  # пропуск клеток поля
+                    elif isinstance(z, Boom):  # цепочка взрывов, если задела вторую бочку
                         self.board[y + j][x + i].remove(z)
                         self.explosion(x + i, y + j)
                         return
-                    elif isinstance(z, Enemy): # уничтожение врага
+                    elif isinstance(z, Enemy):  # уничтожение врага
                         if z in self.enemies:
                             self.enemies.remove(z)
-                    self.board[y + j][x + i].remove(z) # уничтожение коробки, если она там есть
-                self.board[y + j][x + i].append(Pepl_Boom((x + i, y + j), 0, 10)) # создание эффекта взрыва
-                if self.player_obj.get_pos() == (x + i, y + j): # если бочка взорвала игрока, игра заканчивается
+                    self.board[y + j][x + i].remove(z)  # уничтожение коробки, если она там есть
+                self.board[y + j][x + i].append(Pepl_Boom((x + i, y + j), 0, 10))  # создание эффекта взрыва
+                if self.player_obj.get_pos() == (x + i, y + j):  # если бочка взорвала игрока, игра заканчивается
                     self.player_obj.alive = False
                     self.game_run = False
 
-    def render(self, screen): # функция рендера изображения
-        screen.fill('black') # очистка экрана
-        self.sprites.empty() # очистка списка спрайтов
-        self.sprites.add(StandartSprite(load_image(config.background_sprite), (0, 0), 0)) # добавление фона
+    def render(self, screen):  # функция рендера изображения
+        screen.fill('black')  # очистка экрана
+        self.sprites.empty()  # очистка списка спрайтов
+        self.sprites.add(StandartSprite(load_image(config.background_sprite), (0, 0), 0))  # добавление фона
         for i in range(self.height):
-            for j in range(self.width): # проходит по board
-                for creature in self.board[i][j]: # и добавляет соотвестсвующий спрайт
+            for j in range(self.width):  # проходит по board
+                for creature in self.board[i][j]:  # и добавляет соотвестсвующий спрайт
                     self.sprites.add(StandartSprite(creature.image,
                                                     (j * self.cell_size + self.left_shift,
                                                      i * self.cell_size + self.top_shift), creature.angle))
-        self.sprites.add(StandartSprite(self.player_obj.image, # отдельная обработка игрока, он не хранится в board
+        self.sprites.add(StandartSprite(self.player_obj.image,  # отдельная обработка игрока, он не хранится в board
                                         (self.player_obj.x * self.cell_size + self.left_shift,
                                          self.player_obj.y * self.cell_size + self.top_shift), self.player_obj.angle))
-        self.sprites.update() # обновление списка спрайтов
-        self.sprites.draw(screen) # отрисовка
+        self.sprites.update()  # обновление списка спрайтов
+        self.sprites.draw(screen)  # отрисовка
 
-    def render_full_screen(self, screen, path, alpha=250): # функция добавления фона
-        image = pygame.transform.scale(load_image(path), (screen.get_width(), screen.get_height())) # создание
-        image.set_alpha(alpha) # нужного изобрадения фона
+    def render_full_screen(self, screen, path, alpha=250):  # функция добавления фона
+        image = pygame.transform.scale(load_image(path), (screen.get_width(), screen.get_height()))  # создание
+        image.set_alpha(alpha)  # нужного изобрадения фона
         self.sprites.add(StandartSprite(image, (0, 0), 0))
-        self.sprites.draw(screen) # отрисовка
+        self.sprites.draw(screen)  # отрисовка
 
-    def render_heating(self, screen): # функция отрисовки нагрева
-        image = load_image('heat' + str(self.heating) + '.png') # выбор цифры, в зависимости от нагрева
+    def render_heating(self, screen):  # функция отрисовки нагрева
+        image = load_image('heat' + str(self.heating) + '.png')  # выбор цифры, в зависимости от нагрева
         self.sprites.add(StandartSprite(image, (810, 280), 0))
-        self.sprites.draw(screen) # отрисовка
+        self.sprites.draw(screen)  # отрисовка
 
-    def render_player_score(self, screen): # функция отрисовки счёта игрока
-        score = self.player_obj.score # получение информации о счёте
-        if len(str(score)) == 1: # если счёт один (она узкая)
-            font = pygame.font.Font('score_font.ttf', 133) # то шрифт больше
+    def render_player_score(self, screen):  # функция отрисовки счёта игрока
+        score = self.player_obj.score  # получение информации о счёте
+        if len(str(score)) == 1:  # если счёт один (она узкая)
+            font = pygame.font.Font('score_font.ttf', 133)  # то шрифт больше
             text = font.render(str(score), True, (74, 130, 203))
         else:
-            font = pygame.font.Font('score_font.ttf', 75) # иначе размер меньше
+            font = pygame.font.Font('score_font.ttf', 75)  # иначе размер меньше
             text = font.render(str(score), True, (74, 130, 203))
-        screen.blit(text, (10, 310)) # отрисовка
+        screen.blit(text, (10, 310))  # отрисовка
 
-    def get_cell(self, pos): # функция для получения координаты клетки по координатам нажатия мышки
+    def get_cell(self, pos):  # функция для получения координаты клетки по координатам нажатия мышки
         x_index = (pos[0] - self.left_shift) // self.cell_size
         y_index = (pos[1] - self.top_shift) // self.cell_size
 
-        if 0 <= x_index < self.width and 0 <= y_index < self.height: # если нажали на поле
+        if 0 <= x_index < self.width and 0 <= y_index < self.height:  # если нажали на поле
             return x_index, y_index
         return None
 
@@ -429,72 +435,70 @@ class Board:
             return True
         return False
 
-    def generate_field(self, box_count=30, boom_count=7, enemy_count=7): # функция генерации поля
-        self.board = [[[] for _ in range(self.width)] for _ in range(self.height)] # создание новго списка board
+    def generate_field(self, box_count=30, boom_count=7, enemy_count=7):  # функция генерации поля
+        self.board = [[[] for _ in range(self.width)] for _ in range(self.height)]  # создание новго списка board
         for i in range(self.height):
             for j in range(self.width):
-                self.board[i][j].append(SimpleField()) # заполнение его стандартными клетками
+                self.board[i][j].append(SimpleField())  # заполнение его стандартными клетками
         for i in range(box_count):
             result = False
             while not result:
-                result = self.add_object_to_cell(Wall()) # создание коробок сколько требуется
+                result = self.add_object_to_cell(Wall())  # создание коробок сколько требуется
         for i in range(boom_count):
             result = False
             while not result:
-                result = self.add_object_to_cell(Boom()) # создание бочек сколько требуется
-        for i in range(enemy_count): # создание врагов сколько требуется
+                result = self.add_object_to_cell(Boom())  # создание бочек сколько требуется
+        for i in range(enemy_count):  # создание врагов сколько требуется
             result = False
             while not result:
                 x, y = randint(0, self.height - 1), randint(0, self.width - 1)
-                new_enemy = Enemy((x, y), choice([0, 90, 180, 270])) # задание угла и координат врагу
+                new_enemy = Enemy((x, y), choice([0, 90, 180, 270]))  # задание угла и координат врагу
                 result = self.add_object_to_cell(new_enemy, pos=(x, y))
-            self.enemies.append(new_enemy) # добавление в список врагов
+            self.enemies.append(new_enemy)  # добавление в список врагов
 
-    def check_actions(self): # функция проверки
+    def check_actions(self):  # функция проверки
         x, y = self.player_obj.x, self.player_obj.y
-        for obj in self.board[y][x]: # не находится ли игрок внутри чегото
-            if isinstance(obj, Creature): # если находитя, то игра заканчивается
+        for obj in self.board[y][x]:  # не находится ли игрок внутри чегото
+            if isinstance(obj, Creature):  # если находитя, то игра заканчивается
                 self.player_obj.alive = False
                 self.game_run = False
 
-    def check_enemy_lives(self):
-        if not len(self.enemies):
+    def check_enemy_lives(self):  # функция для проверки
+        if not len(self.enemies):  # остались ли живые враги
             self.game_run = False
         return len(self.enemies)
 
-    def move_player(self, vector):
+    def move_player(self, vector):  # функция перемещения игрока
         x_v, y_v = vector
         x, y = self.player_obj.get_pos()
         if not (0 <= x + x_v < self.width and 0 <= y + y_v < self.height):
-            raise BorderError
-        for cell_obj in self.board[y + y_v][x + x_v]:
+            raise BorderError  # если он не вышел за границы карты
+        for cell_obj in self.board[y + y_v][x + x_v]:  # и не идёт в препятствие
             if isinstance(cell_obj, Wall) or isinstance(cell_obj, Boom) or isinstance(cell_obj, Enemy):
                 raise WallStepError
-        # если все нормально
-        self.player_obj.set_pos(x + x_v, y + y_v)
+        self.player_obj.set_pos(x + x_v, y + y_v)  # то двигается
         return True
 
-    def new_game(self, screen, restart=True):
-        self.enemies = []
+    def new_game(self, screen, restart=True):  # фунуция для создание новго уровня
+        self.enemies = []  # обновление списка врагов
 
         # self.player_obj = Player(pos=(randint(0, len(self.board[0]) - 1), randint(0, len(self.board) - 1)))
         self.player_obj.set_pos(randint(0, len(self.board[0]) - 1), randint(0, len(self.board) - 1))
-        self.player_obj.angle = 0
+        self.player_obj.angle = 0  # создание игрока
         if restart:
-            self.player_obj.score = 0
+            self.player_obj.score = 0  # если игрок умер, а не перешёл на следующий уровень
         self.heating = 0
-        self.game_run = True
+        self.game_run = True  # обновление переменных
 
         self.enemies_count = 7
         self.past_enemies_count = 7
-        self.generate_field(enemy_count=self.enemies_count)
+        self.generate_field(enemy_count=self.enemies_count)  # создание поля
         self.render(screen)
-        self.render_heating(screen)
-        self.game_run = True
+        self.render_heating(screen)  # отрисовка
 
-    def update_player_score(self):
-        self.player_obj.score += self.past_enemies_count - self.check_enemy_lives()
-        self.past_enemies_count = self.check_enemy_lives()
+    def update_player_score(self):  # функция для обновления счёта игрока
+        self.player_obj.score += self.past_enemies_count - self.check_enemy_lives()  # прошлый счёт +
+        self.past_enemies_count = self.check_enemy_lives()  # количество врагов всего - количество живых врагов
 
 
 def main():
