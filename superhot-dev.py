@@ -383,9 +383,13 @@ class Board:
 
     def render_player_score(self, screen):
         score = self.player_obj.score
-        font = pygame.font.Font('score_font.ttf', 75)
-        text = font.render(str(score), True, (74, 130, 203))
-        screen.blit(text, (5, 310))
+        if len(str(score)) == 1:
+            font = pygame.font.Font('score_font.ttf', 133)
+            text = font.render(str(score), True, (74, 130, 203))
+        else:
+            font = pygame.font.Font('score_font.ttf', 75)
+            text = font.render(str(score), True, (74, 130, 203))
+        screen.blit(text, (10, 310))
 
 
     def get_cell(self, pos):
@@ -569,8 +573,6 @@ def main():
             board.render(screen)
             board.render_heating(screen)
             board.update_player_score()
-            # board.render_full_screen(screen, config.glass, alpha=60)
-            # board.render_full_screen(screen, config.pixels, alpha=30)
             board.render_player_score(screen)
             filters.draw(screen)
         else:
