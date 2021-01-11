@@ -406,7 +406,6 @@ class Board:
 
     def render_player_score(self, screen):  # функция отрисовки счёта игрока
         score = self.player_obj.score  # получение информации о счёте
-        print(score)
         if len(str(score)) == 1:  # если счет состоит из одной цифры, она узкая и русуем большим шрифтом
             font = pygame.font.Font('score_font.ttf', 133)  # то шрифт больше
             text = font.render(str(score), True, (74, 130, 203))
