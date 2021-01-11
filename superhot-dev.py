@@ -4,9 +4,9 @@ import time
 import config
 import os
 
-# ▄▀▀ █░█ █▀▄ █▀▀ █▀▀▄     █░░ ▄▀▄ ▀█▀     ▒▄▀▄     █▀▄
-# ░▀▄ █░█ █░█ █▀▀ █▐█▀     █▀▄ █░█ ░█░     ░▒▄▀     █░█
-# ▀▀░ ░▀░ █▀░ ▀▀▀ ▀░▀▀     ▀░▀ ░▀░ ░▀░     ▒█▄▄     ▀▀░
+# ▄▀▀ █ █ █▀▄ █▀▀ █▀▀▄   █   ▄▀▄ ▀█▀    ▄▀▄  █▀▄
+#  ▀▄ █ █ █ █ █▀▀ █▐█▀   █▀▄ █ █  █      ▄▀  █ █
+# ▀▀   ▀  █▀  ▀▀▀ ▀ ▀▀   ▀ ▀  ▀   ▀     █▄▄  ▀▀
 
 
 all_sprites = pygame.sprite.Group()
@@ -393,11 +393,11 @@ class Board:
         self.sprites.update()  # обновление списка спрайтов
         self.sprites.draw(screen)  # отрисовка
 
-    def render_full_screen(self, screen, path, alpha=250):  # функция добавления фона
+    def add_full_screen(self, screen, path, group, alpha=250):  # функция добавления фона
         image = pygame.transform.scale(load_image(path), (screen.get_width(), screen.get_height()))  # создание
         image.set_alpha(alpha)  # нужного изобрадения фона
-        self.sprites.add(StandartSprite(image, (0, 0), 0))
-        self.sprites.draw(screen)  # отрисовка
+        group.add(StandartSprite(image, (0, 0), 0))
+        # self.sprites.draw(screen)  # отрисовка
 
     def render_heating(self, screen):  # функция отрисовки нагрева
         image = load_image('heat' + str(self.heating) + '.png')  # выбор цифры, в зависимости от нагрева
@@ -406,7 +406,8 @@ class Board:
 
     def render_player_score(self, screen):  # функция отрисовки счёта игрока
         score = self.player_obj.score  # получение информации о счёте
-        if len(str(score)) == 1:  # если счёт один (она узкая)
+        print(score)
+        if len(str(score)) == 1:  # если счет состоит из одной цифры, она узкая и русуем большим шрифтом
             font = pygame.font.Font('score_font.ttf', 133)  # то шрифт больше
             text = font.render(str(score), True, (74, 130, 203))
         else:
@@ -464,7 +465,7 @@ class Board:
                 self.game_run = False
 
     def check_enemy_lives(self):  # функция для проверки
-        if not len(self.enemies):  # остались ли живые враги
+        if not len(self.enemies):  # возвращает число живых врагов
             self.game_run = False
         return len(self.enemies)
 
@@ -482,7 +483,6 @@ class Board:
     def new_game(self, screen, restart=True):  # фунуция для создание новго уровня
         self.enemies = []  # обновление списка врагов
 
-        # self.player_obj = Player(pos=(randint(0, len(self.board[0]) - 1), randint(0, len(self.board) - 1)))
         self.player_obj.set_pos(randint(0, len(self.board[0]) - 1), randint(0, len(self.board) - 1))
         self.player_obj.angle = 0  # создание игрока
         if restart:
@@ -505,59 +505,76 @@ def main():
     running = True
     fps = 30  # количество кадров в секунду
     clock = pygame.time.Clock()
-    screen.blit(pygame.transform.scale(load_image(config.start_screen),
+    screen.blit(pygame.transform.scale(load_image(config.start_screen),  # РЕНДЕР СТАРТОВОГО ЭКРАНА
                                        (screen.get_width(), screen.get_height())), (0, 0))
+
+    # группа спрайтов со спрайтами, которые постоянно есть на экране
+    game_over_filt = pygame.sprite.Group()
+    filters = pygame.sprite.Group()
+    # фильтр стекла
+    image = pygame.transform.scale(load_image(config.glass), (screen.get_width(), screen.get_height()))
+    image.set_alpha(45)  # установка прозрачности
+    filters.add(StandartSprite(image, (0, 0), 0))
+    # фильтр пикселей
+    image = pygame.transform.scale(load_image(config.pixels), (screen.get_width(), screen.get_height()))
+    image.set_alpha(20)  # установка прозрачности
+    filters.add(StandartSprite(image, (0, 0), 0))
+    filters.draw(screen)
+
     pygame.display.flip()
     start_screen = True
-    while start_screen:
+    isFilter = True
+    while start_screen:  # стартовый экран
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 quit()
             if event.type == pygame.KEYDOWN:
-                start_screen = False
+                if event.key == pygame.K_k:
+                    if isFilter:
+                        screen.blit(pygame.transform.scale(load_image(config.start_screen),  # РЕНДЕР СТАРТОВОГО ЭКРАНА
+                                                           (screen.get_width(), screen.get_height())), (0, 0))
+                    else:
+                        filters.draw(screen)
+                    pygame.display.flip()
+                    isFilter = not isFilter
+                else:
+                    start_screen = False
 
-    filters = pygame.sprite.Group()
-    image = pygame.transform.scale(load_image(config.glass), (screen.get_width(), screen.get_height()))
-    image.set_alpha(60)
-    filters.add(StandartSprite(image, (0, 0), 0))
-    image = pygame.transform.scale(load_image(config.pixels), (screen.get_width(), screen.get_height()))
-    image.set_alpha(30)
-    filters.add(StandartSprite(image, (0, 0), 0))
-
-    board = Board(n1, n2, cell_size=cs, left_shift=65, top_shift=75)
-    board.new_game(screen)
-    freeze = 0
-    game_over_freeze = 5
+    board = Board(n1, n2, cell_size=cs, left_shift=65, top_shift=75)  # инициализация board
+    board.new_game(screen)  # запуск игры на главном экране
+    freeze = 0  # заморозка управления на время проигрывания анимаций
+    game_over_freeze = 5  # заморозка анимации на пятом кадре перед экраном смерти
     step = False
+    # загрузка звука
     game_music = pygame.mixer.Sound(config.game_music)
     start_sound = pygame.mixer.Sound(config.start_sound)
     death_sound = pygame.mixer.Sound(config.death_sound)
     win_sound = pygame.mixer.Sound(config.win_sound)
-    game_over = False
-    board.render(screen)
+    game_over = False  # отображается ли экран смерти
+    board.render(screen)  # рендер экрана
     board.render_heating(screen)
-    player_vector = [0, -1]
-    game_music.play(-1)
-    death_sound.set_volume(config.game_volume)
+    player_vector = [0, -1]  # вектор игрока для опеределения поворота спрайта
+    game_music.play(-1)  # установка постоянного повторения музыки
+    death_sound.set_volume(config.game_volume)  # установка громкости
     start_sound.set_volume(config.game_volume)
     game_music.set_volume(config.game_volume)
     win_sound.set_volume(config.game_volume)
-    while running:
-        pressed = False
+    while running:  # основной игровой цикл
+        pressed = False  # была ли нажата какая-либо клавиша в данной итерации
         for event in pygame.event.get():
-            if event.type == pygame.QUIT:
+            if event.type == pygame.QUIT:  # закрытие окна
                 running = False
                 continue
-            if config.debug_mode:
+            if config.debug_mode:  # дебаг-мод, нажатие на клетку выведет в консоль объекты хранящиеся там
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     if not board.get_cell(event.pos) is None:
                         print(board.board[board.get_cell(event.pos)[1]][board.get_cell(event.pos)[0]])
-            if event.type == pygame.KEYDOWN:
+            if event.type == pygame.KEYDOWN:  # нажатия клавиш
                 if board.game_run:
                     # блок перемещения игрока
                     try:
-                        if not freeze:
+                        if not freeze:  # если не проигрываются анимации
                             if event.key == config.move_up:
                                 player_vector = [0, -1]
                                 board.player_obj.angle = 0
@@ -586,46 +603,51 @@ def main():
                         pass
                     except WallStepError:
                         pass
-                pressed = True
-        if board.game_run or game_over_freeze > 0:
+                pressed = True  # на этой итерации была нажата клавиша
+                if event.key == pygame.K_k:
+                    isFilter = not isFilter
+                    pressed = False
+        board.render(screen)  # рендер основного экрана
+        board.render_heating(screen)
+        board.update_player_score()
+        board.render_player_score(screen)
+        if board.game_run or game_over_freeze > 0:  # анимации выстрела и фильтр
             board.shoot_render()
-            board.render(screen)
-            board.render_heating(screen)
-            board.update_player_score()
-            board.render_player_score(screen)
-            filters.draw(screen)
+            if isFilter:
+                filters.draw(screen)
         else:
-            if not game_over:
-                game_music.stop()
-                board.shoot_render()
-                board.render(screen)
-                board.render_heating(screen)
-                board.update_player_score()
-                board.render_player_score(screen)
-                if board.check_enemy_lives():
-                    board.render_full_screen(screen, config.game_over_sprite, alpha=170)
-                    death_sound.play(0, 0)
-                else:
-                    board.render_full_screen(screen, config.game_win_screen, alpha=170)
+            game_over_filt.empty()  # фильтр экрана смерти
+            if board.check_enemy_lives():  # если >0 врагов, то это проигрыш
+                board.add_full_screen(screen, config.game_over_sprite, game_over_filt, alpha=170)
+            else:  # иначе победа
+                board.add_full_screen(screen, config.game_win_screen, game_over_filt, alpha=170)
+            game_over_filt.draw(screen)
+            if isFilter:
+                filters.draw(screen)
+            if not game_over:  # если ещё не показывали экрана смерти
+                game_music.stop()  # останавливаем музыку
+                if board.check_enemy_lives():  # если >0 врагов, то это проигрыш
+                    death_sound.play()
+                else:  # иначе победа
                     win_sound.play()
-                game_over = True
+                game_over = True  # экран смерти отрендерен
             else:
-                if pressed:
+                if pressed:  # если press any key, начинаем новую игру
                     game_music.play(-1, 0)
                     start_sound.play(0, 0)
                     player_vector = [0, -1]
-                    print(bool(board.check_enemy_lives()))
                     board.new_game(screen, restart=bool(board.check_enemy_lives()))
                     game_over = False
                     game_over_freeze = 5
-        if freeze:
+        if freeze:  # если freeze > 0,  уменьшаем его
             freeze -= 1
-        if not board.game_run:
+        if not board.game_run:  # если уже умерли
             game_over_freeze -= 1
-        if step and freeze == 9:
+        if step and freeze == 9 and board.game_run:  # после рендера анимации игрока,
+            # делают ход враги и ещё 10 итераций идет анимация врагов
             board.enemy_step()
             step = False
-        board.check_enemy_lives()
+        board.check_enemy_lives()  # эта функция остановит игру, если не осталось врагов
         pygame.display.flip()
         clock.tick(fps)
 
