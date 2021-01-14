@@ -409,9 +409,12 @@ class Board:
         if len(str(score)) == 1:  # если счет состоит из одной цифры, она узкая и русуем большим шрифтом
             font = pygame.font.Font('score_font.ttf', 133)  # то шрифт больше
             text = font.render(str(score), True, (74, 130, 203))
-        else:
+        elif len(str(score)) == 2:
             font = pygame.font.Font('score_font.ttf', 75)  # иначе размер меньше
             text = font.render(str(score), True, (74, 130, 203))
+        else:
+            font = pygame.font.Font('score_font.ttf', 75)  # иначе размер меньше
+            text = font.render('ER', True, (74, 130, 203))
         screen.blit(text, (10, 310))  # отрисовка
 
     def get_cell(self, pos):  # функция для получения координаты клетки по координатам нажатия мышки
@@ -489,9 +492,12 @@ class Board:
         self.heating = 0
         self.game_run = True  # обновление переменных
 
-        self.enemies_count = 7
-        self.past_enemies_count = 7
-        self.generate_field(enemy_count=self.enemies_count)  # создание поля
+        self.enemies_count = 7 if self.player_obj.score < 70 else 224
+        self.past_enemies_count = self.enemies_count
+        if self.player_obj.score < 70:
+            self.generate_field(enemy_count=self.enemies_count)  # создание поля
+        else:
+            self.generate_field(enemy_count=self.enemies_count, box_count=0, boom_count=0)
         self.render(screen)
         self.render_heating(screen)  # отрисовка
 
