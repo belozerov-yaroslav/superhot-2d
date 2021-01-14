@@ -492,12 +492,9 @@ class Board:
         self.heating = 0
         self.game_run = True  # обновление переменных
 
-        self.enemies_count = 7 if self.player_obj.score < 70 else 224
+        self.enemies_count = 7
         self.past_enemies_count = self.enemies_count
-        if self.player_obj.score < 70:
-            self.generate_field(enemy_count=self.enemies_count)  # создание поля
-        else:
-            self.generate_field(enemy_count=self.enemies_count, box_count=0, boom_count=0)
+        self.generate_field(enemy_count=self.enemies_count)  # создание поля
         self.render(screen)
         self.render_heating(screen)  # отрисовка
 
