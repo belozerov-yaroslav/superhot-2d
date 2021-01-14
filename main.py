@@ -409,13 +409,16 @@ class Board:
         if len(str(score)) == 1:  # если счет состоит из одной цифры, она узкая и русуем большим шрифтом
             font = pygame.font.Font('score_font.ttf', 133)  # то шрифт больше
             text = font.render(str(score), True, (74, 130, 203))
+            screen.blit(text, (10, 305))  # отрисовка
         elif len(str(score)) == 2:
             font = pygame.font.Font('score_font.ttf', 75)  # иначе размер меньше
             text = font.render(str(score), True, (74, 130, 203))
+            screen.blit(text, (7, 310))  # отрисовка
         else:
-            font = pygame.font.Font('score_font.ttf', 75)  # иначе размер меньше
-            text = font.render('ER', True, (74, 130, 203))
-        screen.blit(text, (10, 310))  # отрисовка
+            font = pygame.font.Font('score_font.ttf', 50)  # иначе размер меньше
+            text = font.render(str(score), True, (74, 130, 203))
+            screen.blit(text, (6, 320))  # отрисовка
+
 
     def get_cell(self, pos):  # функция для получения координаты клетки по координатам нажатия мышки
         x_index = (pos[0] - self.left_shift) // self.cell_size
